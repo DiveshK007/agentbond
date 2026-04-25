@@ -1,0 +1,21 @@
+{
+  "name": "@agentbond/bots",
+  "version": "0.1.0",
+  "scripts": {
+    "price-bot": "ts-node price-bot.ts",
+    "swap-bot": "ts-node swap-bot.ts",
+    "fail-bot": "ts-node fail-bot.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.30.1",
+    "@solana/web3.js": "^1.95.3",
+    "dotenv": "^16.4.5",
+    "node-fetch": "2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/node-fetch": "^2.6.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
