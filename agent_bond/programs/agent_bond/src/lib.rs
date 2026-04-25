@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod instructions;
+pub mod reputation;
 pub mod state;
 
 use instructions::*;
@@ -63,5 +64,21 @@ pub mod agent_bond {
 
     pub fn assign_agent(ctx: Context<AssignAgent>, agent_pubkey: Pubkey) -> Result<()> {
         instructions::job::assign_agent(ctx, agent_pubkey)
+    }
+
+    pub fn submit_result(ctx: Context<SubmitResult>, result_hash: [u8; 32]) -> Result<()> {
+        instructions::resolution::submit_result(ctx, result_hash)
+    }
+
+    pub fn approve_job(ctx: Context<ApproveJob>) -> Result<()> {
+        instructions::resolution::approve_job(ctx)
+    }
+
+    pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
+        instructions::resolution::dispute_job(ctx)
+    }
+
+    pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
+        instructions::resolution::claim_timeout(ctx)
     }
 }
