@@ -133,7 +133,7 @@ export const IDL = {
         { name: "reward", type: "u64" },
         { name: "deadlineSeconds", type: "u64" },
         { name: "mode", type: "u8" },
-        { name: "agentOwner", type: { option: "publicKey" } },
+        { name: "agentOwner", type: { option: "pubkey" } },
       ],
     },
     {
@@ -161,7 +161,7 @@ export const IDL = {
         { name: "poster", writable: true, signer: true },
         { name: "systemProgram", address: "11111111111111111111111111111111" },
       ],
-      args: [{ name: "agentPubkey", type: "publicKey" }],
+      args: [{ name: "agentPubkey", type: "pubkey" }],
     },
     {
       name: "submitResult",
@@ -272,7 +272,7 @@ export const IDL = {
       type: {
         kind: "struct",
         fields: [
-          { name: "admin", type: "publicKey" },
+          { name: "admin", type: "pubkey" },
           { name: "totalAgents", type: "u64" },
           { name: "totalJobs", type: "u64" },
           { name: "totalVolume", type: "u64" },
@@ -286,7 +286,7 @@ export const IDL = {
       type: {
         kind: "struct",
         fields: [
-          { name: "owner", type: "publicKey" },
+          { name: "owner", type: "pubkey" },
           { name: "name", type: { array: ["u8", 32] } },
           { name: "metadataUri", type: { array: ["u8", 128] } },
           { name: "stake", type: "u64" },
@@ -308,7 +308,7 @@ export const IDL = {
       type: {
         kind: "struct",
         fields: [
-          { name: "agent", type: "publicKey" },
+          { name: "agent", type: "pubkey" },
           { name: "capability", type: { array: ["u8", 32] } },
           { name: "price", type: "u64" },
           { name: "isActive", type: "bool" },
@@ -322,8 +322,8 @@ export const IDL = {
       type: {
         kind: "struct",
         fields: [
-          { name: "poster", type: "publicKey" },
-          { name: "agent", type: "publicKey" },
+          { name: "poster", type: "pubkey" },
+          { name: "agent", type: "pubkey" },
           { name: "descriptionHash", type: { array: ["u8", 32] } },
           { name: "reward", type: "u64" },
           { name: "collateral", type: "u64" },
@@ -344,8 +344,8 @@ export const IDL = {
       type: {
         kind: "struct",
         fields: [
-          { name: "job", type: "publicKey" },
-          { name: "agent", type: "publicKey" },
+          { name: "job", type: "pubkey" },
+          { name: "agent", type: "pubkey" },
           { name: "price", type: "u64" },
           { name: "estimatedSeconds", type: "u32" },
           { name: "createdAt", type: "i64" },
