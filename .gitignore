@@ -1,0 +1,9 @@
+.next/
+output/
+target/
+node_modules/
+.env
+.DS_Store
+.anchor/
+.agents/
+.claude/
