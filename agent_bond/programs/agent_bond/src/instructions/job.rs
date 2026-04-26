@@ -98,6 +98,7 @@ pub fn create_job(
     job.job_index = job_index;
     job.bump = ctx.bumps.job;
 
+    let rent_min = Rent::get()?.minimum_balance(0);
     system_program::transfer(
         CpiContext::new(
             ctx.accounts.system_program.to_account_info(),
@@ -106,7 +107,7 @@ pub fn create_job(
                 to: ctx.accounts.escrow_vault.to_account_info(),
             },
         ),
-        reward,
+        rent_min.checked_add(reward).unwrap(),
     )?;
 
     ctx.accounts.protocol_config.total_jobs = ctx

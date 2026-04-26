@@ -7,8 +7,8 @@ import { AgentBondClient } from "../sdk/src/client";
 import { Job, JobStatus } from "../sdk/src/types";
 import { findAgentProfile, findJob, findServiceListing } from "../sdk/src/utils";
 
-const DEVNET_RPC = "https://api.devnet.solana.com";
-const POLL_INTERVAL_MS = 5_000;
+const DEVNET_RPC = process.env.RPC_URL || "https://api.devnet.solana.com";
+const POLL_INTERVAL_MS = 15_000;
 
 function loadKeypair(): Keypair {
   const keypairPath =

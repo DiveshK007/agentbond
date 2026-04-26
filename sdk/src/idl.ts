@@ -123,7 +123,7 @@ export const IDL = {
           writable: true,
           pda: { seeds: [{ kind: "const", value: [112, 114, 111, 116, 111, 99, 111, 108] }] },
         },
-        { name: "agentProfile", writable: true, optional: true },
+        { name: "agentProfile", writable: true, optional: true, isOptional: true },
         { name: "poster", writable: true, signer: true },
         { name: "systemProgram", address: "11111111111111111111111111111111" },
       ],
