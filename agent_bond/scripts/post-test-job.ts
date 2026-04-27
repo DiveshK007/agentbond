@@ -60,7 +60,7 @@ async function main(): Promise<void> {
   const stats = await client.getProtocolStats();
   const jobIndex = stats.totalJobs;
 
-  const tx = await client.postJob(descriptionHash, BigInt(50_000), BigInt(300));
+  const tx = await client.postJob(descriptionHash, BigInt(50_000), BigInt(86400));
 
   console.log(`Job index: ${jobIndex}`);
   console.log(`Transaction: ${tx}`);

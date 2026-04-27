@@ -8,7 +8,7 @@ import { Job, JobStatus } from "../sdk/src/types";
 import { findAgentProfile, findJob, findServiceListing } from "../sdk/src/utils";
 
 const DEVNET_RPC = process.env.RPC_URL || "https://api.devnet.solana.com";
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 30_000;
 
 function loadKeypair(): Keypair {
   const keypairPath =
@@ -21,6 +21,7 @@ function loadKeypair(): Keypair {
 export abstract class BaseBot {
   protected client!: AgentBondClient;
   protected walletPublicKey!: PublicKey;
+  private readonly biddedJobs = new Set<string>();
   private readonly processingJobs = new Set<string>();
 
   constructor(
@@ -87,17 +88,58 @@ export abstract class BaseBot {
   private async pollJobs(): Promise<void> {
     try {
       const jobs = await this.client.getAllJobs();
-      const assigned = jobs.filter(
+      this.log(`Found ${jobs.length} total jobs`);
+
+      // Loop 1: bid on all open jobs we haven't bid on yet
+      const openJobs = jobs.filter(
         (j) =>
-          j.status === JobStatus.Assigned &&
+          j.status === JobStatus.Open &&
+          !this.biddedJobs.has(j.jobIndex.toString())
+      );
+      this.log(`${openJobs.length} open jobs to bid on`);
+      if (openJobs.length === 0) {
+        this.log("No matching jobs this poll");
+      }
+      for (const job of openJobs) {
+        this.log(`Bidding on job index ${job.jobIndex}`);
+        void this.bidJob(job);
+      }
+
+      // Loop 2: execute jobs assigned to this bot
+      const assignedJobs = jobs.filter((j) => j.status === JobStatus.Assigned);
+      for (const j of assignedJobs) {
+        this.log(
+          `Job #${j.jobIndex} agent: ${j.agent.toBase58()}, my wallet: ${this.walletPublicKey.toBase58()}, match: ${j.agent.equals(this.walletPublicKey)}`
+        );
+      }
+      const myJobs = assignedJobs.filter(
+        (j) =>
           j.agent.equals(this.walletPublicKey) &&
           !this.processingJobs.has(j.jobIndex.toString())
       );
-      for (const job of assigned) {
+      for (const job of myJobs) {
         void this.processJob(job);
       }
     } catch (err) {
       this.log(`Poll error: ${String(err)}`);
+    }
+  }
+
+  private async bidJob(job: Job): Promise<void> {
+    const idx = job.jobIndex.toString();
+    this.biddedJobs.add(idx);
+    try {
+      const [jobPda] = findJob(job.jobIndex);
+      const tx = await this.client.bidOnJob(jobPda, this.servicePriceLamports, 3600);
+      this.log(`Bid placed on job #${idx}: ${tx}`);
+    } catch (err) {
+      const msg = String(err);
+      if (msg.includes("already in use")) {
+        this.log(`Bid on job #${idx} already exists, marking as bid`);
+      } else {
+        this.biddedJobs.delete(idx);
+      }
+      this.log(`Bid failed on job #${idx}: ${msg}`);
     }
   }
 

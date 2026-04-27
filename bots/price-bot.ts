@@ -11,17 +11,15 @@ class PriceBot extends BaseBot {
   }
 
   async executeJob(_job: Job): Promise<string> {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
-    );
+    const res = await fetch("https://api.coinbase.com/v2/prices/SOL-USD/spot");
     if (!res.ok) {
-      throw new Error(`CoinGecko error: HTTP ${res.status}`);
+      throw new Error(`Coinbase error: HTTP ${res.status}`);
     }
-    const data = (await res.json()) as { solana: { usd: number } };
+    const data = (await res.json()) as { data: { amount: string } };
     return JSON.stringify({
-      price: data.solana.usd,
+      price: parseFloat(data.data.amount),
       timestamp: Date.now(),
-      source: "coingecko",
+      source: "coinbase",
     });
   }
 }

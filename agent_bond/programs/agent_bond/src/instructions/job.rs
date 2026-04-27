@@ -35,7 +35,7 @@ pub struct CreateJob<'info> {
     )]
     pub protocol_config: Account<'info, ProtocolConfig>,
 
-    #[account(mut)]
+    #[account()]
     pub agent_profile: Option<Account<'info, AgentProfile>>,
 
     #[account(mut)]

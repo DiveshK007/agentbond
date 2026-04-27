@@ -9,6 +9,7 @@ import {
 import {
   PublicKey,
   Connection,
+
 } from "@solana/web3.js";
 import { IDL } from "./idl";
 import {
@@ -160,6 +161,7 @@ export class AgentBondClient {
         job: jobPda,
         escrowVault,
         protocolConfig: protocolConfigPda,
+        agentProfile: findAgentProfile(this.provider.wallet.publicKey)[0],
         poster: this.walletPublicKey,
       })
       .rpc();
