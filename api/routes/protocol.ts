@@ -5,8 +5,26 @@ const router = Router();
 
 router.get("/stats", async (_req, res) => {
   try {
-    const stats = await client.getProtocolStats();
-    res.json(stats);
+    const [stats, agents, jobs] = await Promise.all([
+      client.getProtocolStats(),
+      client.getAllAgents(),
+      client.getAllJobs(),
+    ]);
+
+    const jobsCompleted = jobs.filter((j) => j.status === 3).length;
+    const solStaked =
+      agents.reduce((sum, a) => sum + Number(a.stake), 0) / 1_000_000_000;
+    const solSlashed =
+      agents.reduce((sum, a) => sum + Number(a.totalSlashed), 0) / 1_000_000_000;
+
+    res.json({
+      totalAgents: Number(stats.totalAgents),
+      totalJobs: Number(stats.totalJobs),
+      jobsCompleted,
+      solStaked,
+      solSlashed,
+      platformFeeBps: stats.platformFeeBps,
+    });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }

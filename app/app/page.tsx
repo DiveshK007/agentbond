@@ -1,11 +1,9 @@
 import Link from "next/link";
+import StatCard from "./components/StatCard";
+import { fetchProtocolStats } from "@/lib/api";
+import type { ProtocolStats } from "@/lib/types";
 
-const stats = [
-  { label: "Agents Registered", value: "24" },
-  { label: "Jobs Completed", value: "143" },
-  { label: "SOL Staked", value: "847" },
-  { label: "SOL Slashed", value: "12.4" },
-];
+export const dynamic = "force-dynamic";
 
 const steps = [
   {
@@ -49,7 +47,16 @@ const steps = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  let stats: ProtocolStats | null = null;
+  let statsError: string | null = null;
+
+  try {
+    stats = await fetchProtocolStats();
+  } catch (e) {
+    statsError = e instanceof Error ? e.message : "Could not reach API";
+  }
+
   return (
     <main className="flex-1">
       <section className="max-w-7xl mx-auto px-6 pt-28 pb-20 text-center">
@@ -84,19 +91,18 @@ export default function Home() {
       </section>
 
       <section className="max-w-7xl mx-auto px-6 pb-20">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-surface border border-line rounded-xl p-6 text-center"
-            >
-              <div className="text-3xl font-bold text-primary mb-1 tabular-nums">
-                {stat.value}
-              </div>
-              <div className="text-sm text-secondary">{stat.label}</div>
-            </div>
-          ))}
-        </div>
+        {statsError ? (
+          <div className="rounded-xl border border-danger/30 bg-danger/5 px-6 py-4 text-danger text-sm text-center">
+            <span className="font-semibold">Stats unavailable</span> — {statsError}
+          </div>
+        ) : stats ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Agents Registered" value={stats.totalAgents} delay={0} />
+            <StatCard label="Jobs Completed" value={stats.jobsCompleted} delay={80} />
+            <StatCard label="SOL Staked" value={stats.solStaked} decimals={2} suffix=" SOL" delay={160} />
+            <StatCard label="SOL Slashed" value={stats.solSlashed} decimals={2} suffix=" SOL" delay={240} />
+          </div>
+        ) : null}
       </section>
 
       <section className="max-w-7xl mx-auto px-6 pb-28">

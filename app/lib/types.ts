@@ -1,3 +1,12 @@
+export interface ProtocolStats {
+  totalAgents: number;
+  totalJobs: number;
+  jobsCompleted: number;
+  solStaked: number;
+  solSlashed: number;
+  platformFeeBps: number;
+}
+
 export interface Agent {
   pubkey: string;
   owner: string;

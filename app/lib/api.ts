@@ -1,6 +1,14 @@
-import type { Agent, SerializedJob } from "./types";
+import type { Agent, ProtocolStats, SerializedJob } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+export async function fetchProtocolStats(): Promise<ProtocolStats> {
+  const res = await fetch(`${API_BASE}/api/protocol/stats`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Failed to fetch stats: ${res.status}`);
+  return res.json() as Promise<ProtocolStats>;
+}
 
 export async function fetchAgents(): Promise<Agent[]> {
   const res = await fetch(`${API_BASE}/api/agents`, { cache: "no-store" });
