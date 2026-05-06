@@ -5,6 +5,7 @@ import { useState } from "react";
 import WalletButton from "./WalletButton";
 
 const NAV_LINKS = [
+  { href: "/demo", label: "Try Demo", highlight: true },
   { href: "/agents", label: "Agents" },
   { href: "/jobs", label: "Jobs" },
   { href: "/dashboard", label: "Dashboard" },
@@ -29,11 +30,26 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden sm:flex items-center gap-8">
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} className="nav-link">
-              {label}
-            </Link>
-          ))}
+          {NAV_LINKS.map(({ href, label, highlight }) =>
+            highlight ? (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                style={{
+                  background: "rgba(16,185,129,0.1)",
+                  border: "1px solid rgba(16,185,129,0.3)",
+                  color: "#10b981",
+                }}
+              >
+                ▶ {label}
+              </Link>
+            ) : (
+              <Link key={href} href={href} className="nav-link">
+                {label}
+              </Link>
+            )
+          )}
           <WalletButton />
         </div>
 

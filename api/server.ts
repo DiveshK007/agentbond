@@ -9,6 +9,7 @@ import swigRouter from "./routes/swig";
 import servicesRouter from "./routes/services";
 import webhooksRouter from "./routes/webhooks";
 import badgesRouter from "./routes/badges";
+import feedRouter from "./routes/feed";
 
 const app = express();
 const PORT = process.env["PORT"] ? parseInt(process.env["PORT"]) : 3001;
@@ -24,6 +25,7 @@ app.use("/api/swig", swigRouter);
 app.use("/api/services", servicesRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/badges", badgesRouter);
+app.use("/api/feed", feedRouter);
 
 app.listen(PORT, () => {
   console.log(`AgentBond API listening on port ${PORT}`);

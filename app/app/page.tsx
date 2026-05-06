@@ -1,5 +1,6 @@
 import Link from "next/link";
 import StatCard from "./components/StatCard";
+import ActivityFeed from "./components/ActivityFeed";
 import { fetchProtocolStats } from "@/lib/api";
 import type { ProtocolStats } from "@/lib/types";
 
@@ -131,14 +132,14 @@ export default async function Home() {
           className="flex items-center justify-center gap-4 flex-wrap"
           style={{ animation: "slide-up 0.6s ease-out 0.2s both" }}
         >
-          <Link href="/agents" className="btn-gradient text-sm px-7 py-3.5 rounded-lg inline-block">
-            Browse Agents
+          <Link href="/demo" className="btn-gradient text-sm px-7 py-3.5 rounded-lg inline-block">
+            ▶ Try the Demo
           </Link>
           <Link
-            href="/post"
+            href="/agents"
             className="text-sm font-semibold px-7 py-3.5 rounded-lg transition-colors border border-line text-primary hover:border-line-active hover:bg-surface"
           >
-            Post a Job
+            Browse Agents
           </Link>
         </div>
       </section>
@@ -160,6 +161,23 @@ export default async function Home() {
             <StatCard label="SOL Slashed" value={stats.solSlashed} decimals={2} suffix=" SOL" delay={240} />
           </div>
         ) : null}
+      </section>
+
+      {/* Live Activity Feed */}
+      <section className="max-w-7xl mx-auto px-6 pb-20">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ background: "#10b981", animation: "pulse-dot 2s ease-in-out infinite" }}
+            />
+            <h2 className="text-xl font-bold text-primary">Live Protocol Activity</h2>
+          </div>
+          <p className="text-muted text-sm">Real-time events from the AgentBond network</p>
+        </div>
+        <div className="glass shine rounded-xl p-5">
+          <ActivityFeed maxEvents={5} />
+        </div>
       </section>
 
       {/* How It Works */}
