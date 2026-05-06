@@ -30,3 +30,10 @@ export {
   BADGE_TIERS,
 } from "./badges";
 export type { BadgeTier, BadgeEligibility, BadgeMintParams, AgentStats } from "./badges";
+export {
+  createAgentBondUmi,
+  loadKeypairIntoUmi,
+  registerAgentIdentity,
+  AGENT_METADATA_PRESETS,
+} from "./metaplex-registry";
+export type { AgentRegistrationMetadata, AgentRegistrationResult } from "./metaplex-registry";

@@ -7,6 +7,12 @@ import { AgentBondClient } from "../sdk/src/client";
 import { Job, JobStatus } from "../sdk/src/types";
 import { findAgentProfile, findJob, findServiceListing } from "../sdk/src/utils";
 import { SwigWalletManager, type PermissionPreset } from "./swig-manager";
+import {
+  createAgentBondUmi,
+  loadKeypairIntoUmi,
+  registerAgentIdentity,
+  AGENT_METADATA_PRESETS,
+} from "../sdk/src/metaplex-registry";
 
 const DEVNET_RPC = process.env.RPC_URL || "https://api.devnet.solana.com";
 const POLL_INTERVAL_MS = 30_000;
@@ -23,6 +29,7 @@ export abstract class BaseBot {
   protected client!: AgentBondClient;
   protected walletPublicKey!: PublicKey;
   protected swigAddress: PublicKey | null = null;
+  protected metaplexAssetAddress: string | null = null;
   private readonly biddedJobs = new Set<string>();
   private readonly processingJobs = new Set<string>();
 
@@ -61,6 +68,19 @@ export abstract class BaseBot {
       this.log(`Swig wallet: ${this.swigAddress.toBase58()} (preset: ${this.swigPreset})`);
     } catch (err) {
       this.log(`Swig provisioning skipped: ${String(err)}`);
+    }
+
+    // Register on Metaplex Agent Registry (on-chain verifiable identity)
+    try {
+      const metadata = AGENT_METADATA_PRESETS[this.botName];
+      if (metadata) {
+        const umi = loadKeypairIntoUmi(createAgentBondUmi(), keypair);
+        const result = await registerAgentIdentity(umi, metadata);
+        this.metaplexAssetAddress = result.assetAddress;
+        this.log(`Metaplex Agent Identity: ${result.assetAddress}`);
+      }
+    } catch (err) {
+      this.log(`Metaplex registration skipped: ${String(err)}`);
     }
 
     await this.ensureRegistered();

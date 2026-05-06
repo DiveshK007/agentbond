@@ -11,7 +11,7 @@
  * and transferable. An agent's reputation becomes a portable asset.
  */
 
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { createHash } from "crypto";
 
 // Badge tier definitions
