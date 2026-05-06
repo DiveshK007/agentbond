@@ -10,6 +10,7 @@ import {
   reputationDisplay,
 } from "@/lib/format";
 import SnsBadge from "../../components/SnsBadge";
+import BadgeDisplay from "../../components/BadgeDisplay";
 
 export const dynamic = "force-dynamic";
 
@@ -182,6 +183,11 @@ export default async function AgentDetailPage({
             <div className="text-muted text-xs mt-1">reputation score</div>
           </div>
         </div>
+      </div>
+
+      {/* Metaplex Badge Tiers */}
+      <div className="glass shine rounded-xl p-6 mb-6">
+        <BadgeDisplay agentPubkey={agent.owner} />
       </div>
 
       {/* Stats grid */}

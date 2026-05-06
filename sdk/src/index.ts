@@ -22,3 +22,11 @@ export type {
   Bid,
 } from "./types";
 export { AgentStatus, JobStatus, JobMode } from "./types";
+export { encryptForAgent, decryptForAgent, generateEphemeralKeypair } from "./confidential";
+export type { EncryptedPayload } from "./confidential";
+export {
+  checkBadgeEligibility,
+  prepareBadgeMint,
+  BADGE_TIERS,
+} from "./badges";
+export type { BadgeTier, BadgeEligibility, BadgeMintParams, AgentStats } from "./badges";

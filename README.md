@@ -71,6 +71,27 @@ The **CrossChainBot** uses LI.FI to swap across 58+ chains via 27 bridges and 31
 ### 👻 Phantom — Wallet Integration
 Phantom is the primary wallet for users interacting with the frontend — connecting, posting jobs, and approving deliveries.
 
+### 🔔 Helius — Agent Transaction Monitoring
+Helius webhooks monitor all AgentBond program activity in real-time:
+- **Webhook receiver** at `/api/webhooks/helius` — Helius pushes parsed transaction data
+- **Enhanced transaction history** at `/api/webhooks/transactions/:address` — human-readable activity feed
+- **Programmatic webhook registration** — automatically monitor agent registrations, job completions, and slashing events
+
+### 🔮 Switchboard — On-Chain Oracle Price Feeds
+The **OracleBot** reads cryptographically signed price data from Switchboard's on-demand oracle feeds:
+- Verifiable on-chain price data (not trusting an off-chain API)
+- Cross-references with Coinbase for deviation detection
+- Oracle signatures can be verified by anyone — trustless data
+
+### 🎨 Metaplex — NFT Reputation Badges
+Agents earn **Metaplex Core NFT** badges when they hit milestones:
+- 🥉 **Bronze** — 5+ jobs completed
+- 🥈 **Silver** — 25+ jobs, 90%+ success rate
+- 🥇 **Gold** — 100+ jobs, 95%+ success rate, 1+ SOL staked
+- 💎 **Diamond** — 500+ jobs, 99%+ success rate, 5+ SOL staked
+
+Badges make agent reputation **portable** — an on-chain credential that travels with the agent.
+
 ---
 
 ## 🤖 Bot Fleet
@@ -78,6 +99,7 @@ Phantom is the primary wallet for users interacting with the frontend — connec
 | Bot | What It Does | Swig Preset | Data Source |
 |---|---|---|---|
 | **PriceBot** | Real-time SOL/USD feeds | Read Only | Coinbase API |
+| **OracleBot** | Verifiable oracle price feeds | Read Only | Switchboard |
 | **SwapBot** | Token swaps on Solana | Swap Enabled | Jupiter V6 |
 | **CrossChainBot** | Cross-chain swaps (58+ chains) | Swap Enabled | LI.FI API |
 | **PortfolioBot** | Portfolio aggregation | View Only | Zerion API |
@@ -141,11 +163,13 @@ agentbond/
 │   ├── swap-bot.ts         # Jupiter V6 integration
 │   ├── crosschain-bot.ts   # LI.FI cross-chain swaps
 │   ├── portfolio-bot.ts    # Zerion portfolio aggregation
+│   ├── oracle-bot.ts       # Switchboard oracle price feeds
 │   └── price-bot.ts        # Coinbase price feeds
 ├── sdk/                    # TypeScript SDK
 │   └── src/
 │       ├── client.ts       # AgentBondClient
 │       ├── confidential.ts # NaCl encryption module
+│       ├── badges.ts       # Metaplex Core NFT badge system
 │       ├── types.ts        # Shared types
 │       └── utils.ts        # PDA derivation utilities
 └── programs/               # Anchor smart contracts
@@ -154,15 +178,17 @@ agentbond/
 
 ---
 
-## 🏆 Hackathon Tracks
+## ⚡ 7 Sponsor Tool Integrations
 
-| Track | Coverage |
-|---|---|
-| **Agents + Tokenization** | Core product — agent registration, staking, reputation |
-| **Payments + Commerce** | x402 pay-per-request, Swig wallet payments |
-| **DeFi + Stablecoins** | Jupiter swaps, LI.FI cross-chain |
-| **Privacy + Confidential Compute** | Umbra encryption for private jobs |
-| **Treasury + Security** | Swig scoped permissions, automatic slashing |
+| # | Sponsor | Integration | Prize Alignment |
+|---|---|---|---|
+| 1 | **Swig** | Smart wallet per bot with permission presets | Agents + Security |
+| 2 | **Coinbase x402** | Pay-per-request agent services (USDC) | Payments + Commerce |
+| 3 | **LI.FI** | CrossChainBot — 58-chain swap quotes | DeFi + Cross-chain |
+| 4 | **Phantom** | Primary frontend wallet connection | Wallet + UX |
+| 5 | **Helius** | Webhook monitoring + enhanced tx history | Infrastructure + Data |
+| 6 | **Switchboard** | On-chain oracle price feeds (OracleBot) | Oracles + DeFi |
+| 7 | **Metaplex** | NFT reputation badges (Core NFTs) | NFTs + Tokenization |
 
 ---
 

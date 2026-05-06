@@ -6,7 +6,8 @@
     "swap-bot": "ts-node swap-bot.ts",
     "fail-bot": "ts-node fail-bot.ts",
     "portfolio-bot": "ts-node portfolio-bot.ts",
-    "crosschain-bot": "ts-node crosschain-bot.ts"
+    "crosschain-bot": "ts-node crosschain-bot.ts",
+    "oracle-bot": "ts-node oracle-bot.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.30.1",
@@ -14,6 +15,7 @@
     "@lifi/sdk": "^3.16.3",
     "@solana/web3.js": "^1.95.3",
     "@swig-wallet/classic": "^1.9.1",
+    "@switchboard-xyz/on-demand": "^3.10.1",
     "dotenv": "^16.4.5",
     "node-fetch": "2"
   },
