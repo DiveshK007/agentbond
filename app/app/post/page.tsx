@@ -13,10 +13,8 @@ const DEADLINE_OPTIONS = [
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 async function sha256Hex(text: string): Promise<string> {
-  const buffer = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(text)
-  );
+  const encoded = new TextEncoder().encode(text);
+  const buffer = await crypto.subtle.digest("SHA-256", encoded as unknown as ArrayBuffer);
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -60,7 +58,6 @@ const client = new AgentBondClient(
 );`;
 
   const metaStep = `
-// Store description off-chain so anyone can look it up by hash
 await fetch('${API_BASE}/api/metadata/job', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -81,7 +78,7 @@ await fetch('${API_BASE}/api/metadata/job', {
   BigInt(${deadlineSecs})
 );`;
 
-  return `// Run from the agentbond/ root directory:\n// npx ts-node --esm post-job.ts\n\n${setup}\n${metaStep}\n\n${txStep}\nconsole.log('✓ Transaction:', sig);`;
+  return `${setup}\n${metaStep}\n\n${txStep}\nconsole.log('Transaction:', sig);`;
 }
 
 export default function PostJobPage() {
@@ -97,9 +94,7 @@ export default function PostJobPage() {
   const [copied, setCopied] = useState(false);
 
   const rewardLamports = Math.round(parseFloat(rewardSOL || "0") * 1e9);
-  const deadlineLabel =
-    DEADLINE_OPTIONS.find((o) => o.seconds === deadlineSecs)?.label ?? "";
-
+  const deadlineLabel = DEADLINE_OPTIONS.find((o) => o.seconds === deadlineSecs)?.label ?? "";
   const canPreview =
     description.trim().length > 0 &&
     rewardLamports > 0 &&
@@ -110,16 +105,15 @@ export default function PostJobPage() {
     setPreviewing(true);
     try {
       const h = await sha256Hex(description);
-      const cmd = buildPostJobCommand({
+      setSdkCommand(buildPostJobCommand({
         description,
         hash: h,
         lamports: rewardLamports.toString(),
         deadlineSecs,
         mode,
         agentPubkey: agentPubkey.trim(),
-      });
+      }));
       setHash(h);
-      setSdkCommand(cmd);
       setStep(2);
     } finally {
       setPreviewing(false);
@@ -136,62 +130,57 @@ export default function PostJobPage() {
     return (
       <main className="max-w-2xl mx-auto px-6 py-12">
         <StepIndicator current={2} />
-
         <h1 className="text-2xl font-bold text-primary mb-8">Review & Submit</h1>
 
-        <div className="bg-surface border border-line rounded-xl p-6 mb-6 flex flex-col gap-4">
-          <ReviewRow label="Description">
-            <span className="text-secondary text-sm leading-relaxed whitespace-pre-wrap">
-              {description}
-            </span>
-          </ReviewRow>
-          <ReviewRow label="SHA-256 Hash">
-            <span className="font-mono text-xs text-secondary break-all">{hash}</span>
-          </ReviewRow>
-          <ReviewRow label="Reward">
-            <span className="font-mono text-primary">{rewardSOL} SOL</span>
-          </ReviewRow>
-          <ReviewRow label="Deadline">
-            <span className="text-primary">{deadlineLabel}</span>
-          </ReviewRow>
-          <ReviewRow label="Mode">
-            <span className="text-primary">
-              {mode === 1 ? "⚡ Instant Hire" : "📋 Job Board"}
-            </span>
-          </ReviewRow>
-          {mode === 1 && (
-            <ReviewRow label="Agent">
-              <span className="font-mono text-xs text-secondary break-all">
-                {agentPubkey}
+        <div className="glass rounded-xl p-6 mb-5 flex flex-col gap-4">
+          {[
+            { label: "Description", value: description, multiline: true },
+            { label: "SHA-256 Hash", value: hash, mono: true, small: true },
+            { label: "Reward", value: `${rewardSOL} SOL`, mono: true },
+            { label: "Deadline", value: deadlineLabel },
+            { label: "Mode", value: mode === 1 ? "Instant Hire" : "Job Board" },
+            ...(mode === 1 ? [{ label: "Agent", value: agentPubkey, mono: true, small: true }] : []),
+          ].map(({ label, value, mono, small, multiline }) => (
+            <div key={label} className="flex flex-col gap-1 border-b border-line pb-4 last:border-0 last:pb-0">
+              <span className="text-muted text-xs">{label}</span>
+              <span
+                className={`text-sm ${mono ? "font-mono" : ""} ${small ? "text-xs" : ""} text-secondary`}
+                style={multiline ? { whiteSpace: "pre-wrap" } : { wordBreak: "break-all" }}
+              >
+                {value}
               </span>
-            </ReviewRow>
-          )}
+            </div>
+          ))}
         </div>
 
-        <div className="bg-surface border border-line rounded-xl p-6 mb-6">
+        <div className="glass rounded-xl p-6 mb-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-primary font-semibold text-sm">SDK Command</h2>
             <button
               onClick={handleCopy}
-              className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium transition-all"
+              style={
                 copied
-                  ? "border-emerald/30 bg-emerald/10 text-emerald"
-                  : "border-line text-secondary hover:border-line-active hover:text-primary"
-              }`}
+                  ? { background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.3)" }
+                  : { borderColor: "var(--border)", color: "var(--text-secondary)" }
+              }
             >
-              {copied ? "✓ Copied!" : "Copy Command"}
+              {copied ? "✓ Copied" : "Copy"}
             </button>
           </div>
-          <pre className="bg-elevated rounded-lg p-4 text-xs font-mono text-secondary overflow-x-auto leading-relaxed whitespace-pre">
+          <pre
+            className="text-xs font-mono text-secondary overflow-x-auto leading-relaxed whitespace-pre rounded-lg p-4"
+            style={{ background: "rgba(0,0,0,0.4)" }}
+          >
             {sdkCommand}
           </pre>
         </div>
 
-        <div className="bg-info/5 border border-info/20 rounded-xl px-5 py-4 text-info text-xs mb-8 leading-relaxed">
-          <span className="font-semibold">Wallet integration coming soon.</span>{" "}
-          Until then, copy the command above and run it from the{" "}
-          <code className="font-mono">agentbond/</code> root directory using
-          your local Solana keypair.
+        <div
+          className="rounded-xl px-5 py-4 text-info text-xs mb-8 leading-relaxed"
+          style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)" }}
+        >
+          Copy the command above and run it from the <code className="font-mono">agentbond/</code> root directory.
         </div>
 
         <div className="flex gap-3">
@@ -215,21 +204,25 @@ export default function PostJobPage() {
   return (
     <main className="max-w-2xl mx-auto px-6 py-12">
       <StepIndicator current={1} />
-
       <h1 className="text-2xl font-bold text-primary mb-8">Job Details</h1>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <Field label="Description" required>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the task you want the agent to perform…"
             rows={5}
-            className="w-full bg-elevated border border-line rounded-lg px-4 py-3 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors resize-none"
+            className="input-glass resize-none"
+            style={{ paddingTop: "0.75rem", paddingBottom: "0.75rem" }}
           />
         </Field>
 
-        <Field label="Reward" required hint={rewardLamports > 0 ? `${rewardLamports.toLocaleString()} lamports` : undefined}>
+        <Field
+          label="Reward"
+          required
+          hint={rewardLamports > 0 ? `${rewardLamports.toLocaleString()} lamports` : undefined}
+        >
           <div className="relative">
             <input
               type="number"
@@ -238,11 +231,9 @@ export default function PostJobPage() {
               placeholder="0.5"
               min="0"
               step="0.001"
-              className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 pr-14 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+              className="input-glass font-mono pr-14"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm font-medium">
-              SOL
-            </span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm">SOL</span>
           </div>
         </Field>
 
@@ -253,11 +244,12 @@ export default function PostJobPage() {
                 key={opt.seconds}
                 type="button"
                 onClick={() => setDeadlineSecs(opt.seconds)}
-                className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                className="py-2.5 rounded-lg border text-sm font-medium transition-all"
+                style={
                   deadlineSecs === opt.seconds
-                    ? "border-emerald bg-emerald/10 text-emerald"
-                    : "border-line text-secondary hover:border-line-active hover:text-primary"
-                }`}
+                    ? { background: "rgba(16,185,129,0.1)", borderColor: "rgba(16,185,129,0.3)", color: "#10b981" }
+                    : { borderColor: "var(--border)", color: "var(--text-secondary)" }
+                }
               >
                 {opt.label}
               </button>
@@ -266,28 +258,33 @@ export default function PostJobPage() {
         </Field>
 
         <Field label="Mode">
-          <div className="flex gap-2">
+          <div
+            className="flex gap-0 p-1 rounded-lg"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
             <button
               type="button"
               onClick={() => setMode(0)}
-              className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+              className="flex-1 py-2 rounded-md text-sm font-medium transition-all"
+              style={
                 mode === 0
-                  ? "border-info bg-info/10 text-info"
-                  : "border-line text-secondary hover:border-line-active hover:text-primary"
-              }`}
+                  ? { background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(20,184,166,0.15))", color: "#10b981", borderColor: "rgba(16,185,129,0.2)" }
+                  : { color: "var(--text-secondary)" }
+              }
             >
-              📋 Job Board
+              Job Board
             </button>
             <button
               type="button"
               onClick={() => setMode(1)}
-              className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+              className="flex-1 py-2 rounded-md text-sm font-medium transition-all"
+              style={
                 mode === 1
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-line text-secondary hover:border-line-active hover:text-primary"
-              }`}
+                  ? { background: "rgba(139,92,246,0.15)", color: "#8b5cf6" }
+                  : { color: "var(--text-secondary)" }
+              }
             >
-              ⚡ Instant Hire
+              Instant Hire
             </button>
           </div>
         </Field>
@@ -300,12 +297,9 @@ export default function PostJobPage() {
               onChange={(e) => setAgentPubkey(e.target.value)}
               placeholder="Base58 pubkey of the agent to hire…"
               spellCheck={false}
-              className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+              className="input-glass font-mono"
             />
-            <Link
-              href="/agents"
-              className="inline-block mt-2 text-xs text-info hover:opacity-80 transition-opacity"
-            >
+            <Link href="/agents" className="inline-block mt-2 text-xs text-info hover:opacity-80 transition-opacity">
               Browse agents →
             </Link>
           </Field>
@@ -314,7 +308,7 @@ export default function PostJobPage() {
         <button
           onClick={handlePreview}
           disabled={!canPreview || previewing}
-          className="w-full bg-emerald text-bg font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn-gradient w-full py-3 rounded-lg text-sm"
         >
           {previewing ? "Computing hash…" : "Preview →"}
         </button>
@@ -329,24 +323,24 @@ function StepIndicator({ current }: { current: 1 | 2 }) {
       {[1, 2].map((n) => (
         <div key={n} className="flex items-center gap-3">
           <div
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+            style={
               n === current
-                ? "bg-emerald text-bg"
+                ? { background: "linear-gradient(135deg, #10b981, #14b8a6)", color: "#0a0a0a" }
                 : n < current
-                  ? "bg-emerald/30 text-emerald"
-                  : "bg-elevated text-muted border border-line"
-            }`}
+                  ? { background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }
+                  : { background: "rgba(255,255,255,0.04)", color: "var(--text-muted)", border: "1px solid rgba(255,255,255,0.08)" }
+            }
           >
             {n < current ? "✓" : n}
           </div>
           <span
-            className={`text-sm ${
-              n === current ? "text-primary font-medium" : "text-muted"
-            }`}
+            className="text-sm"
+            style={{ color: n === current ? "var(--text-primary)" : "var(--text-muted)", fontWeight: n === current ? 500 : undefined }}
           >
             {n === 1 ? "Job Details" : "Review & Submit"}
           </span>
-          {n < 2 && <div className="w-8 h-px bg-line" />}
+          {n < 2 && <div className="w-8 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />}
         </div>
       ))}
     </div>
@@ -374,21 +368,6 @@ function Field({
         {hint && <span className="text-muted text-xs font-mono">{hint}</span>}
       </div>
       {children}
-    </div>
-  );
-}
-
-function ReviewRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1 border-b border-line pb-4 last:border-0 last:pb-0">
-      <span className="text-muted text-xs">{label}</span>
-      <div>{children}</div>
     </div>
   );
 }

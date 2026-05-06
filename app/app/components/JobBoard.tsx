@@ -16,16 +16,11 @@ const TABS: { key: TabKey; label: string }[] = [
 
 function filterJobs(jobs: SerializedJob[], tab: TabKey): SerializedJob[] {
   switch (tab) {
-    case "open":
-      return jobs.filter((j) => j.status === 0);
-    case "progress":
-      return jobs.filter((j) => j.status === 1 || j.status === 2);
-    case "completed":
-      return jobs.filter((j) => j.status === 3);
-    case "disputed":
-      return jobs.filter((j) => j.status === 4);
-    default:
-      return jobs;
+    case "open": return jobs.filter((j) => j.status === 0);
+    case "progress": return jobs.filter((j) => j.status === 1 || j.status === 2);
+    case "completed": return jobs.filter((j) => j.status === 3);
+    case "disputed": return jobs.filter((j) => j.status === 4);
+    default: return jobs;
   }
 }
 
@@ -37,43 +32,53 @@ const EMPTY_MESSAGES: Record<TabKey, string> = {
   disputed: "No disputed jobs",
 };
 
+const TAB_COLORS: Record<TabKey, string> = {
+  all: "#10b981",
+  open: "#3b82f6",
+  progress: "#f59e0b",
+  completed: "#10b981",
+  disputed: "#ef4444",
+};
+
 export default function JobBoard({ jobs }: { jobs: SerializedJob[] }) {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
 
-  const visible = useMemo(
-    () => filterJobs(jobs, activeTab),
-    [jobs, activeTab]
-  );
-
+  const visible = useMemo(() => filterJobs(jobs, activeTab), [jobs, activeTab]);
   const countForTab = (key: TabKey) => filterJobs(jobs, key).length;
 
   return (
     <div>
-      <div className="flex items-center gap-1 mb-8 border-b border-line overflow-x-auto pb-px">
+      <div className="flex items-center gap-0 mb-8 border-b border-line overflow-x-auto">
         {TABS.map(({ key, label }) => {
           const count = key === "all" ? jobs.length : countForTab(key);
           const isActive = activeTab === key;
+          const color = TAB_COLORS[key];
+
           return (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px ${
-                isActive
-                  ? "border-emerald text-emerald"
-                  : "border-transparent text-secondary hover:text-primary hover:border-line-active"
-              }`}
+              className="relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors"
+              style={{ color: isActive ? color : "var(--text-secondary)" }}
             >
               {label}
               {count > 0 && (
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full font-mono ${
+                  className="text-xs px-1.5 py-0.5 rounded-full font-mono"
+                  style={
                     isActive
-                      ? "bg-emerald/15 text-emerald"
-                      : "bg-elevated text-muted"
-                  }`}
+                      ? { background: `${color}18`, color }
+                      : { background: "rgba(255,255,255,0.04)", color: "var(--text-muted)" }
+                  }
                 >
                   {count}
                 </span>
+              )}
+              {isActive && (
+                <span
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
+                  style={{ background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
+                />
               )}
             </button>
           );
@@ -82,13 +87,18 @@ export default function JobBoard({ jobs }: { jobs: SerializedJob[] }) {
 
       {visible.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="text-4xl mb-4">📋</div>
-          <p className="text-secondary text-lg font-medium mb-1">
-            {EMPTY_MESSAGES[activeTab]}
-          </p>
-          <p className="text-muted text-sm">
-            Jobs are posted on-chain via the AgentBond SDK.
-          </p>
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="9" y1="9" x2="15" y2="9" />
+              <line x1="9" y1="13" x2="13" y2="13" />
+            </svg>
+          </div>
+          <p className="text-secondary text-base font-medium mb-1">{EMPTY_MESSAGES[activeTab]}</p>
+          <p className="text-muted text-sm">Jobs are posted on-chain via the AgentBond SDK.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

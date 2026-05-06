@@ -25,10 +25,7 @@ function buildRegisterCommand(opts: {
 }): string {
   const { name, metadataUri, stakeLamports, capability, priceLamports } = opts;
 
-  return `// Run from the agentbond/ root directory:
-// npx ts-node --esm register-agent.ts
-
-import { AgentBondClient } from './sdk/src/client';
+  return `import { AgentBondClient } from './sdk/src/client';
 import { Connection, Keypair } from '@solana/web3.js';
 import { Wallet } from '@coral-xyz/anchor';
 import { readFileSync } from 'fs';
@@ -43,20 +40,18 @@ const client = new AgentBondClient(
   new Wallet(keypair)
 );
 
-// Step 1: Register agent and stake SOL
 const regSig = await client.registerAgent(
   ${JSON.stringify(name)},
   ${JSON.stringify(metadataUri || "")},
   BigInt(${stakeLamports})
 );
-console.log('✓ Agent registered:', regSig);
+console.log('Agent registered:', regSig);
 
-// Step 2: List first service capability
 const svcSig = await client.listService(
   ${JSON.stringify(capability)},
   BigInt(${priceLamports})
 );
-console.log('✓ Service listed:', svcSig);`;
+console.log('Service listed:', svcSig);`;
 }
 
 export default function RegisterPage() {
@@ -81,14 +76,13 @@ export default function RegisterPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    const cmd = buildRegisterCommand({
+    setSdkCommand(buildRegisterCommand({
       name: name.trim(),
       metadataUri: metadataUri.trim(),
       stakeLamports: stakeLamports.toString(),
       capability: capability.trim(),
       priceLamports: priceLamports.toString(),
-    });
-    setSdkCommand(cmd);
+    }));
     setSubmitted(true);
   }
 
@@ -102,69 +96,70 @@ export default function RegisterPage() {
     return (
       <main className="max-w-2xl mx-auto px-6 py-12">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-7 h-7 rounded-full bg-emerald flex items-center justify-center text-bg text-xs font-bold">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+            style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)", color: "#0a0a0a" }}
+          >
             ✓
           </div>
-          <span className="text-primary font-medium">Ready to register</span>
+          <span className="text-primary font-medium text-sm">Ready to register</span>
         </div>
 
         <h1 className="text-2xl font-bold text-primary mb-2">Your SDK Command</h1>
         <p className="text-secondary text-sm mb-8">
-          Copy the command and run it from the{" "}
-          <code className="font-mono text-xs bg-elevated px-1.5 py-0.5 rounded border border-line">
+          Copy and run from the{" "}
+          <code className="font-mono text-xs" style={{ background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>
             agentbond/
           </code>{" "}
           root directory.
         </p>
 
-        <div className="bg-surface border border-line rounded-xl p-6 mb-6">
+        <div className="glass rounded-xl p-6 mb-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-primary font-semibold text-sm">register-agent.ts</h2>
             <button
               onClick={handleCopy}
-              className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium transition-all"
+              style={
                 copied
-                  ? "border-emerald/30 bg-emerald/10 text-emerald"
-                  : "border-line text-secondary hover:border-line-active hover:text-primary"
-              }`}
+                  ? { background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.3)" }
+                  : { borderColor: "var(--border)", color: "var(--text-secondary)" }
+              }
             >
-              {copied ? "✓ Copied!" : "Copy Command"}
+              {copied ? "✓ Copied" : "Copy"}
             </button>
           </div>
-          <pre className="bg-elevated rounded-lg p-4 text-xs font-mono text-secondary overflow-x-auto leading-relaxed whitespace-pre">
+          <pre
+            className="text-xs font-mono text-secondary overflow-x-auto leading-relaxed whitespace-pre rounded-lg p-4"
+            style={{ background: "rgba(0,0,0,0.4)" }}
+          >
             {sdkCommand}
           </pre>
         </div>
 
-        <div className="bg-surface border border-line rounded-xl p-5 mb-6">
+        <div className="glass rounded-xl p-5 mb-5">
           <h3 className="text-primary font-semibold text-sm mb-3">Summary</h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-muted text-xs mb-0.5">Agent Name</p>
-              <p className="text-primary">{name}</p>
-            </div>
-            <div>
-              <p className="text-muted text-xs mb-0.5">Stake</p>
-              <p className="text-primary font-mono">{stakeSOL} SOL</p>
-            </div>
-            <div>
-              <p className="text-muted text-xs mb-0.5">Capability</p>
-              <p className="text-primary font-mono">{capability}</p>
-            </div>
-            <div>
-              <p className="text-muted text-xs mb-0.5">Service Price</p>
-              <p className="text-primary font-mono">{priceSOL} SOL</p>
-            </div>
+            {[
+              { label: "Agent Name", value: name },
+              { label: "Stake", value: `${stakeSOL} SOL`, mono: true },
+              { label: "Capability", value: capability, mono: true },
+              { label: "Price", value: `${priceSOL} SOL`, mono: true },
+            ].map(({ label, value, mono }) => (
+              <div key={label}>
+                <p className="text-muted text-xs mb-0.5">{label}</p>
+                <p className={`text-primary ${mono ? "font-mono" : ""}`}>{value}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="bg-info/5 border border-info/20 rounded-xl px-5 py-4 text-info text-xs mb-8 leading-relaxed">
-          <span className="font-semibold">Wallet integration coming soon.</span>{" "}
+        <div
+          className="rounded-xl px-5 py-4 text-info text-xs mb-8 leading-relaxed"
+          style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)" }}
+        >
           Once the transaction succeeds, your agent will appear in the{" "}
-          <Link href="/agents" className="underline underline-offset-2">
-            Agent Explorer
-          </Link>
-          .
+          <Link href="/agents" className="underline underline-offset-2">Agent Explorer</Link>.
         </div>
 
         <div className="flex gap-3">
@@ -172,7 +167,7 @@ export default function RegisterPage() {
             onClick={() => setSubmitted(false)}
             className="border border-line text-secondary px-5 py-2.5 rounded-lg hover:border-line-active hover:text-primary transition-colors text-sm"
           >
-            ← Edit Details
+            ← Edit
           </button>
           <Link
             href="/agents"
@@ -187,21 +182,17 @@ export default function RegisterPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-6 py-12">
-      <Link
-        href="/agents"
-        className="inline-flex items-center gap-1.5 text-secondary hover:text-primary text-sm mb-10 transition-colors"
-      >
-        ← Browse Agents
+      <Link href="/agents" className="inline-flex items-center gap-1.5 text-muted hover:text-primary text-sm mb-10 transition-colors">
+        ← Agents
       </Link>
 
       <h1 className="text-2xl font-bold text-primary mb-2">Register as Agent</h1>
       <p className="text-secondary text-sm mb-10">
-        Stake SOL to offer services on the AgentBond protocol. Your stake is
-        your bond — failures slash it, successes grow your reputation.
+        Stake SOL to offer services on the AgentBond protocol. Higher stake means higher collateral and a higher reputation ceiling.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="bg-surface border border-line rounded-xl p-6 flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="glass rounded-xl p-6 flex flex-col gap-5">
           <h2 className="text-primary font-semibold text-sm">Agent Identity</h2>
 
           <Field label="Agent Name" required>
@@ -209,13 +200,11 @@ export default function RegisterPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. PriceBot, SwapBot…"
+              placeholder="e.g. PriceBot"
               maxLength={32}
-              className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors"
+              className="input-glass"
             />
-            <p className="text-muted text-xs mt-1.5">
-              Max 32 characters. Stored on-chain.
-            </p>
+            <p className="text-muted text-xs mt-1.5">Max 32 characters. Stored on-chain.</p>
           </Field>
 
           <Field label="Metadata URI" hint="optional">
@@ -224,7 +213,7 @@ export default function RegisterPage() {
               value={metadataUri}
               onChange={(e) => setMetadataUri(e.target.value)}
               placeholder="https://your-agent.com/metadata.json"
-              className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors"
+              className="input-glass"
             />
           </Field>
 
@@ -241,20 +230,15 @@ export default function RegisterPage() {
                 placeholder="0.5"
                 min="0"
                 step="0.001"
-                className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 pr-14 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+                className="input-glass font-mono pr-14"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm font-medium">
-                SOL
-              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm">SOL</span>
             </div>
-            <p className="text-muted text-xs mt-1.5">
-              Minimum stake is your skin in the game. Higher stake → higher
-              possible collateral → more trusted.
-            </p>
+            <p className="text-muted text-xs mt-1.5">Higher stake → more trusted → higher collateral ceiling.</p>
           </Field>
         </div>
 
-        <div className="bg-surface border border-line rounded-xl p-6 flex flex-col gap-5">
+        <div className="glass rounded-xl p-6 flex flex-col gap-5">
           <h2 className="text-primary font-semibold text-sm">First Service</h2>
 
           <Field label="Capability" required>
@@ -262,13 +246,11 @@ export default function RegisterPage() {
               type="text"
               value={capability}
               onChange={(e) => setCapability(e.target.value)}
-              placeholder="e.g. fetch_sol_price, jupiter_swap…"
+              placeholder="fetch_sol_price"
               maxLength={32}
-              className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+              className="input-glass font-mono"
             />
-            <p className="text-muted text-xs mt-1.5">
-              Snake-case identifier. Used as a PDA seed — no spaces.
-            </p>
+            <p className="text-muted text-xs mt-1.5">Snake-case identifier. Used as PDA seed.</p>
           </Field>
 
           <Field
@@ -284,11 +266,9 @@ export default function RegisterPage() {
                 placeholder="0.01"
                 min="0"
                 step="0.001"
-                className="w-full bg-elevated border border-line rounded-lg px-4 py-2.5 pr-14 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+                className="input-glass font-mono pr-14"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm font-medium">
-                SOL
-              </span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-sm">SOL</span>
             </div>
           </Field>
         </div>
@@ -296,7 +276,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full bg-emerald text-bg font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn-gradient w-full py-3 rounded-lg text-sm"
         >
           Generate SDK Command →
         </button>

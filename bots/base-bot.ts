@@ -6,6 +6,7 @@ import { Wallet } from "@coral-xyz/anchor";
 import { AgentBondClient } from "../sdk/src/client";
 import { Job, JobStatus } from "../sdk/src/types";
 import { findAgentProfile, findJob, findServiceListing } from "../sdk/src/utils";
+import { SwigWalletManager, type PermissionPreset } from "./swig-manager";
 
 const DEVNET_RPC = process.env.RPC_URL || "https://api.devnet.solana.com";
 const POLL_INTERVAL_MS = 30_000;
@@ -21,6 +22,7 @@ function loadKeypair(): Keypair {
 export abstract class BaseBot {
   protected client!: AgentBondClient;
   protected walletPublicKey!: PublicKey;
+  protected swigAddress: PublicKey | null = null;
   private readonly biddedJobs = new Set<string>();
   private readonly processingJobs = new Set<string>();
 
@@ -28,7 +30,8 @@ export abstract class BaseBot {
     private readonly botName: string,
     private readonly capability: string,
     private readonly stakeAmountLamports: bigint,
-    private readonly servicePriceLamports: bigint
+    private readonly servicePriceLamports: bigint,
+    private readonly swigPreset: PermissionPreset = "readonly"
   ) {}
 
   protected log(msg: string): void {
@@ -46,6 +49,19 @@ export abstract class BaseBot {
     this.client = new AgentBondClient(connection, new Wallet(keypair) as never);
 
     this.log(`Wallet: ${this.walletPublicKey.toBase58()}`);
+
+    // Provision Swig smart wallet with scoped permissions
+    try {
+      const swigManager = new SwigWalletManager(connection);
+      this.swigAddress = await swigManager.provisionSwig(
+        this.botName,
+        keypair,
+        this.swigPreset
+      );
+      this.log(`Swig wallet: ${this.swigAddress.toBase58()} (preset: ${this.swigPreset})`);
+    } catch (err) {
+      this.log(`Swig provisioning skipped: ${String(err)}`);
+    }
 
     await this.ensureRegistered();
     await this.ensureServiceListed();

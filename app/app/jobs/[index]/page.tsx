@@ -16,18 +16,14 @@ import StatusBadge from "../../components/StatusBadge";
 export const dynamic = "force-dynamic";
 
 const PIPELINE_STEPS = [
-  { label: "Open", status: 0 },
-  { label: "Assigned", status: 1 },
-  { label: "Submitted", status: 2 },
-  { label: "Resolved", status: 3 },
+  { label: "Open", status: 0, color: "#3b82f6" },
+  { label: "Assigned", status: 1, color: "#f59e0b" },
+  { label: "Submitted", status: 2, color: "#8b5cf6" },
+  { label: "Resolved", status: 3, color: "#10b981" },
 ];
 
-function stepVariant(
-  stepStatus: number,
-  jobStatus: number
-): "completed" | "current" | "pending" {
-  const terminalAt3 = jobStatus === 3 || jobStatus === 4;
-  if (stepStatus === 3 && terminalAt3) return "current";
+function stepVariant(stepStatus: number, jobStatus: number): "completed" | "current" | "pending" {
+  if (stepStatus === 3 && (jobStatus === 3 || jobStatus === 4)) return "current";
   if (stepStatus < jobStatus) return "completed";
   if (stepStatus === jobStatus) return "current";
   return "pending";
@@ -38,75 +34,75 @@ function PipelineNode({
   variant,
   isDisputed,
   isLast,
+  color,
 }: {
   label: string;
   variant: "completed" | "current" | "pending";
   isDisputed?: boolean;
   isLast?: boolean;
+  color: string;
 }) {
-  const circleBase = "w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold";
-  const circleClass =
-    variant === "completed"
-      ? `${circleBase} bg-emerald text-bg`
-      : variant === "current"
-        ? `${circleBase} ${isDisputed ? "bg-danger text-bg ring-4 ring-danger/20" : "bg-emerald text-bg ring-4 ring-emerald/20"}`
-        : `${circleBase} bg-elevated border-2 border-line text-muted`;
-
-  const labelClass =
-    variant === "current"
-      ? isDisputed
-        ? "text-danger font-semibold"
-        : "text-emerald font-semibold"
-      : variant === "completed"
-        ? "text-secondary"
-        : "text-muted";
-
-  const displayLabel =
-    label === "Resolved"
-      ? isDisputed
-        ? "Disputed"
-        : "Completed"
-      : label;
+  const nodeColor = variant === "current" && isDisputed ? "#ef4444" : color;
+  const displayLabel = label === "Resolved" ? (isDisputed ? "Disputed" : "Completed") : label;
 
   return (
     <div className={`flex items-start ${isLast ? "" : "flex-1"}`}>
       <div className="flex flex-col items-center gap-2 shrink-0">
-        <div className={circleClass}>
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+          style={
+            variant === "completed"
+              ? { background: nodeColor, color: "#0a0a0a" }
+              : variant === "current"
+                ? {
+                    background: `${nodeColor}20`,
+                    border: `2px solid ${nodeColor}`,
+                    color: nodeColor,
+                    boxShadow: `0 0 0 4px ${nodeColor}18`,
+                  }
+                : {
+                    background: "rgba(255,255,255,0.04)",
+                    border: "2px solid rgba(255,255,255,0.1)",
+                    color: "var(--text-muted)",
+                  }
+          }
+        >
           {variant === "completed" ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           ) : (
-            <span className="text-xs">
-              {PIPELINE_STEPS.findIndex((s) => s.label === label) + 1}
-            </span>
+            <span>{PIPELINE_STEPS.findIndex((s) => s.label === label) + 1}</span>
           )}
         </div>
-        <span className={`text-xs whitespace-nowrap ${labelClass}`}>
+        <span
+          className="text-xs whitespace-nowrap font-medium"
+          style={{
+            color: variant === "current" ? nodeColor : variant === "completed" ? "var(--text-secondary)" : "var(--text-muted)",
+          }}
+        >
           {displayLabel}
         </span>
       </div>
       {!isLast && (
         <div
-          className={`flex-1 h-0.5 mt-4 mx-2 ${
-            variant === "completed" ? "bg-emerald" : "bg-line"
-          }`}
+          className="flex-1 h-0.5 mt-4 mx-2 rounded-full"
+          style={{
+            background:
+              variant === "completed"
+                ? `linear-gradient(90deg, ${nodeColor}, rgba(255,255,255,0.08))`
+                : "rgba(255,255,255,0.06)",
+          }}
         />
       )}
     </div>
   );
 }
 
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3 border-b border-line last:border-0">
-      <span className="text-secondary text-sm shrink-0 w-36">{label}</span>
+      <span className="text-secondary text-sm shrink-0 w-32">{label}</span>
       <span className="text-primary text-sm text-right break-all">{children}</span>
     </div>
   );
@@ -136,52 +132,44 @@ export default async function JobDetailPage({
 
   const deadline = formatDeadline(job.deadline);
   const isExpired = job.deadline < Math.floor(Date.now() / 1000);
+  const agentShort = isDefaultPubkey(job.agent) ? "Unassigned" : truncatePubkey(job.agent);
 
-  const agentLabel = isDefaultPubkey(job.agent) ? "Unassigned" : job.agent;
-  const agentShort = isDefaultPubkey(job.agent)
-    ? "Unassigned"
-    : truncatePubkey(job.agent);
-
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-12">
       <Link
         href="/jobs"
-        className="inline-flex items-center gap-1.5 text-secondary hover:text-primary text-sm mb-10 transition-colors"
+        className="inline-flex items-center gap-1.5 text-muted hover:text-primary text-sm mb-10 transition-colors"
       >
-        ← Back to Jobs
+        ← Jobs
       </Link>
 
-      <div className="flex items-start justify-between gap-4 mb-10">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-primary">
-              Job #{job.jobIndex}
-            </h1>
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
+            <h1 className="text-2xl font-bold text-primary">Job #{job.jobIndex}</h1>
             <StatusBadge status={job.status} />
           </div>
-          <p className="text-muted text-xs font-mono">
-            {job.pubkey}
-          </p>
+          <p className="text-muted text-xs font-mono truncate max-w-xs">{job.pubkey}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-2xl font-bold text-primary font-mono">
-            {formatSol(job.reward)} SOL
-          </p>
+          <p className="text-2xl font-bold font-mono gradient-text">{formatSol(job.reward)} SOL</p>
           <p className="text-muted text-xs mt-0.5">reward</p>
         </div>
       </div>
 
-      <div className="bg-surface border border-line rounded-xl p-6 mb-6">
-        <h2 className="text-primary font-semibold text-sm mb-6">
-          Status Pipeline
-        </h2>
+      {/* Pipeline */}
+      <div className="glass rounded-xl p-6 mb-5">
+        <h2 className="text-primary font-semibold text-sm mb-6">Status Pipeline</h2>
         {isAborted ? (
-          <div className="flex items-center gap-3 py-2">
-            <div className="w-9 h-9 rounded-full bg-danger/10 border-2 border-danger/30 flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-danger">
+          <div className="flex items-center gap-3 py-1">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.25)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -190,7 +178,7 @@ export default async function JobDetailPage({
               <p className="text-danger font-semibold text-sm">
                 {isCancelled ? "Cancelled" : "Timed Out"}
               </p>
-              <p className="text-muted text-xs">
+              <p className="text-muted text-xs mt-0.5">
                 {isCancelled
                   ? "This job was cancelled before completion."
                   : "Agent did not submit before the deadline."}
@@ -206,30 +194,32 @@ export default async function JobDetailPage({
                 variant={stepVariant(step.status, job.status)}
                 isDisputed={isDisputed}
                 isLast={i === PIPELINE_STEPS.length - 1}
+                color={step.color}
               />
             ))}
           </div>
         )}
       </div>
 
-      <div className="bg-surface border border-line rounded-xl p-6 mb-6">
-        <h2 className="text-primary font-semibold text-sm mb-2">Job Details</h2>
+      {/* Job Details */}
+      <div className="glass rounded-xl p-6 mb-5">
+        <h2 className="text-primary font-semibold text-sm mb-1">Job Details</h2>
         <DetailRow label="Poster">
           <span className="font-mono">{truncatePubkey(job.poster)}</span>
         </DetailRow>
         <DetailRow label="Agent">
-          <span className={`font-mono ${isDefaultPubkey(job.agent) ? "text-muted italic" : ""}`}>
+          <span className={`font-mono ${isDefaultPubkey(job.agent) ? "text-muted" : ""}`}>
             {agentShort}
           </span>
         </DetailRow>
         <DetailRow label="Reward">
-          <span className="font-mono">{formatSol(job.reward)} SOL</span>
+          <span className="font-mono gradient-text">{formatSol(job.reward)} SOL</span>
         </DetailRow>
         <DetailRow label="Collateral">
           <span className="font-mono">{formatSol(job.collateral)} SOL</span>
         </DetailRow>
         <DetailRow label="Deadline">
-          <span className={isExpired ? "text-danger" : ""}>
+          <span style={{ color: isExpired ? "#ef4444" : undefined }}>
             {deadline} · {formatTimestamp(job.deadline)}
           </span>
         </DetailRow>
@@ -251,8 +241,9 @@ export default async function JobDetailPage({
         )}
       </div>
 
-      <div className="bg-surface border border-line rounded-xl p-6 mb-6">
-        <h2 className="text-primary font-semibold text-sm mb-4">Hashes</h2>
+      {/* Hashes */}
+      <div className="glass rounded-xl p-6 mb-5">
+        <h2 className="text-primary font-semibold text-sm mb-1">Hashes</h2>
         <DetailRow label="Description">
           <span className="flex items-center gap-2">
             <span className="font-mono text-xs break-all">{job.descriptionHash}</span>
@@ -285,11 +276,12 @@ export default async function JobDetailPage({
         </DetailRow>
       </div>
 
+      {/* Assigned Agent */}
       {!isDefaultPubkey(job.agent) && (
-        <div className="bg-surface border border-line rounded-xl p-6">
+        <div className="glass rounded-xl p-6">
           <h2 className="text-primary font-semibold text-sm mb-3">Assigned Agent</h2>
           <div className="flex items-center justify-between">
-            <span className="font-mono text-xs text-secondary break-all">{agentLabel}</span>
+            <span className="font-mono text-xs text-secondary break-all">{job.agent}</span>
             <Link
               href={`/agents/${job.agent}`}
               className="shrink-0 ml-4 text-sm text-emerald hover:opacity-80 transition-opacity font-medium"

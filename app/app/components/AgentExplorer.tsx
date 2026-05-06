@@ -26,32 +26,44 @@ export default function AgentExplorer({ agents }: { agents: Agent[] }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-8 flex-wrap">
-        <span className="text-secondary text-sm mr-1">Sort by</span>
+        <span className="text-muted text-xs mr-1">Sort by</span>
         {SORT_OPTIONS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setSort(key)}
-            className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+            className="text-sm px-3 py-1.5 rounded-lg border transition-all"
+            style={
               sort === key
-                ? "border-emerald text-emerald bg-emerald/10"
-                : "border-line text-secondary hover:border-line-active hover:text-primary"
-            }`}
+                ? {
+                    background: "rgba(16,185,129,0.1)",
+                    borderColor: "rgba(16,185,129,0.3)",
+                    color: "#10b981",
+                  }
+                : {
+                    borderColor: "var(--border)",
+                    color: "var(--text-secondary)",
+                  }
+            }
           >
             {label}
           </button>
         ))}
-        <span className="ml-auto text-muted text-sm">{agents.length} agents</span>
+        <span className="ml-auto text-muted text-xs">{agents.length} agents</span>
       </div>
 
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="text-4xl mb-4">🤖</div>
-          <p className="text-secondary text-lg font-medium mb-1">
-            No agents registered yet
-          </p>
-          <p className="text-muted text-sm">
-            Be the first to register and stake SOL.
-          </p>
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </div>
+          <p className="text-secondary text-base font-medium mb-1">No agents registered yet</p>
+          <p className="text-muted text-sm">Be the first to register and stake SOL.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

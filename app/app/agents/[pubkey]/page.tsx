@@ -9,10 +9,13 @@ import {
   repColorClass,
   reputationDisplay,
 } from "@/lib/format";
+import SnsBadge from "../../components/SnsBadge";
 
 export const dynamic = "force-dynamic";
 
-function StatCard({
+const REP_CIRCUMFERENCE = 2 * Math.PI * 36;
+
+function GlassStat({
   label,
   value,
   sub,
@@ -24,10 +27,14 @@ function StatCard({
   danger?: boolean;
 }) {
   return (
-    <div className="bg-surface border border-line rounded-xl p-5">
+    <div
+      className="glass rounded-xl p-5"
+      style={danger && value !== "0" ? { borderColor: "rgba(239,68,68,0.2)" } : {}}
+    >
       <p className="text-muted text-xs mb-1">{label}</p>
       <p
-        className={`text-xl font-bold font-mono ${danger ? "text-danger" : "text-primary"}`}
+        className="text-xl font-bold font-mono"
+        style={{ color: danger && value !== "0" ? "#ef4444" : "var(--text-primary)" }}
       >
         {value}
       </p>
@@ -36,28 +43,28 @@ function StatCard({
   );
 }
 
-function ReputationBar({
+function ProgressBar({
   label,
   weight,
   fill,
-  colorClass,
+  color,
 }: {
   label: string;
   weight: number;
   fill: number;
-  colorClass: string;
+  color: string;
 }) {
   const pct = Math.min(100, Math.max(0, fill * 100));
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-2">
         <span className="text-secondary text-xs">{label}</span>
-        <span className="text-muted text-xs font-mono">{weight}% weight</span>
+        <span className="text-muted text-xs font-mono">{weight}% weight · {pct.toFixed(0)}%</span>
       </div>
-      <div className="h-2 bg-elevated rounded-full overflow-hidden">
+      <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
         <div
-          className={`h-full rounded-full transition-all ${colorClass}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, background: color }}
         />
       </div>
     </div>
@@ -85,10 +92,12 @@ export default async function AgentDetailPage({
   const isActive = agent.status === 0;
 
   const stakeSOL = lamportsToSol(agent.stake);
-  const lockedSOL = lamportsToSol(agent.lockedStake);
+  const repFill = Math.min(rep / 10000, 1);
+  const ringColor = rep > 7500 ? "#10b981" : rep > 5000 ? "#f59e0b" : "#ef4444";
+  const dashOffset = REP_CIRCUMFERENCE * (1 - repFill);
 
   const total = agent.completed + agent.failed;
-  const successRateFill = total > 0 ? agent.completed / total : 0.5;
+  const successRateFill = total > 0 ? agent.completed / total : 0;
   const stakeCommitmentFill = Math.min(1, stakeSOL / 10);
   const volumeFill = Math.min(1, agent.completed / 100);
   const earningsRatioFill =
@@ -97,184 +106,181 @@ export default async function AgentDetailPage({
       : 0;
 
   const breakdown = [
-    {
-      label: "Success Rate",
-      weight: 40,
-      fill: successRateFill,
-      colorClass: "bg-emerald",
-    },
-    {
-      label: "Stake Commitment",
-      weight: 25,
-      fill: stakeCommitmentFill,
-      colorClass: "bg-info",
-    },
-    {
-      label: "Volume",
-      weight: 20,
-      fill: volumeFill,
-      colorClass: "bg-accent",
-    },
-    {
-      label: "Earnings Ratio",
-      weight: 15,
-      fill: earningsRatioFill,
-      colorClass: "bg-warning",
-    },
+    { label: "Success Rate", weight: 40, fill: successRateFill, color: "#10b981" },
+    { label: "Stake Commitment", weight: 25, fill: stakeCommitmentFill, color: "#3b82f6" },
+    { label: "Volume", weight: 20, fill: volumeFill, color: "#8b5cf6" },
+    { label: "Earnings Ratio", weight: 15, fill: earningsRatioFill, color: "#f59e0b" },
   ];
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-12">
       <Link
         href="/agents"
-        className="inline-flex items-center gap-1.5 text-secondary hover:text-primary text-sm mb-10 transition-colors"
+        className="inline-flex items-center gap-1.5 text-muted hover:text-primary text-sm mb-10 transition-colors"
       >
-        ← Back to Agents
+        ← Agents
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-10">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-primary">{displayName}</h1>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
-                isActive
-                  ? "bg-emerald/10 text-emerald border-emerald/20"
-                  : "bg-danger/10 text-danger border-danger/20"
-              }`}
+      {/* Hero */}
+      <div className="glass shine rounded-xl p-8 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          {/* Avatar + ring */}
+          <div className="relative shrink-0">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="5" />
+              <circle
+                cx="40"
+                cy="40"
+                r="36"
+                fill="none"
+                stroke={ringColor}
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={REP_CIRCUMFERENCE}
+                strokeDashoffset={dashOffset}
+                transform="rotate(-90 40 40)"
+              />
+            </svg>
+            <div
+              className="absolute inset-0 flex items-center justify-center rounded-full text-lg font-bold"
+              style={{
+                margin: 8,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                color: ringColor,
+              }}
             >
-              {isActive ? "Active" : "Suspended"}
-            </span>
+              {displayName.slice(0, 2).toUpperCase()}
+            </div>
           </div>
-          <p className="text-muted font-mono text-xs break-all">{agent.owner}</p>
-          {agent.metadataUri && (
-            <p className="text-muted text-xs mt-1 truncate max-w-md">
-              {agent.metadataUri}
-            </p>
-          )}
-        </div>
 
-        <div className="sm:text-right shrink-0">
-          <div className={`text-6xl font-bold tabular-nums ${repColorClass(rep)}`}>
-            {repStr}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-1 flex-wrap">
+              <h1 className="text-2xl font-bold text-primary">{displayName}</h1>
+              <span
+                className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                style={
+                  isActive
+                    ? { background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.2)" }
+                    : { background: "rgba(239,68,68,0.1)", color: "#ef4444", borderColor: "rgba(239,68,68,0.2)" }
+                }
+              >
+                {isActive ? "Active" : "Suspended"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <p className="text-muted font-mono text-xs break-all">{agent.owner}</p>
+              <SnsBadge pubkey={agent.owner} />
+            </div>
+            <p className="text-muted text-xs">{compRate}% completion rate</p>
           </div>
-          <div className="text-muted text-sm mt-1">reputation score</div>
-          <div className="text-secondary text-xs mt-0.5">{compRate}% completion rate</div>
+
+          <div className="shrink-0 text-right">
+            <div className="text-5xl font-bold tabular-nums" style={{ color: ringColor }}>
+              {repStr}
+            </div>
+            <div className="text-muted text-xs mt-1">reputation score</div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
-        <StatCard
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <GlassStat
           label="Total Staked"
           value={`${formatSol(agent.stake)} SOL`}
           sub={`${formatSol(agent.lockedStake)} SOL locked`}
         />
-        <StatCard
+        <GlassStat
           label="Available Stake"
           value={`${formatSol((Number(agent.stake) - Number(agent.lockedStake)).toString())} SOL`}
-          sub={`${lockedSOL > 0 ? `${formatSol(agent.lockedStake)} locked in jobs` : "none locked"}`}
         />
-        <StatCard
+        <GlassStat
           label="Jobs Completed"
           value={String(agent.completed)}
-          sub={`${agent.failed} failed`}
+          sub={agent.failed > 0 ? `${agent.failed} failed` : undefined}
         />
-        <StatCard
+        <GlassStat
           label="Total Earned"
           value={`${formatSol(agent.totalEarned)} SOL`}
         />
-        <StatCard
+        <GlassStat
           label="Total Slashed"
           value={`${formatSol(agent.totalSlashed)} SOL`}
-          danger={Number(agent.totalSlashed) > 0}
+          danger
         />
-        <StatCard
+        <GlassStat
           label="Consecutive Fails"
           value={String(agent.consecutiveFails)}
-          danger={agent.consecutiveFails > 0}
+          danger
         />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-6 mb-10">
-        <div className="bg-surface border border-line rounded-xl p-6">
-          <h2 className="text-primary font-semibold mb-5">
-            Reputation Breakdown
-          </h2>
-          <div className="flex flex-col gap-4">
+      <div className="grid sm:grid-cols-2 gap-6 mb-6">
+        {/* Reputation breakdown */}
+        <div className="glass rounded-xl p-6">
+          <h2 className="text-primary font-semibold mb-5 text-sm">Reputation Breakdown</h2>
+          <div className="flex flex-col gap-5">
             {breakdown.map((b) => (
-              <ReputationBar key={b.label} {...b} />
+              <ProgressBar key={b.label} {...b} />
             ))}
           </div>
           <p className="text-muted text-xs mt-5">
-            Bars show component fill relative to its maximum possible
-            contribution.
+            Each bar shows fill relative to its maximum possible contribution.
           </p>
         </div>
 
-        <div className="bg-surface border border-line rounded-xl p-6">
-          <h2 className="text-primary font-semibold mb-5">Services</h2>
+        {/* Services */}
+        <div className="glass rounded-xl p-6">
+          <h2 className="text-primary font-semibold mb-5 text-sm">Services</h2>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-10 h-10 rounded-lg bg-elevated flex items-center justify-center mb-3">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-muted"
-              >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+              style={{ background: "rgba(255,255,255,0.04)" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <p className="text-secondary text-sm font-medium">
-              No services listed
-            </p>
+            <p className="text-secondary text-sm font-medium">No services listed</p>
             <p className="text-muted text-xs mt-1">
-              Service listings are advertised on-chain via{" "}
-              <code className="font-mono">list_service</code>.
+              Listed via <code className="font-mono">list_service</code> instruction.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-surface border border-line rounded-xl p-6">
-        <h2 className="text-primary font-semibold mb-4">About</h2>
-        <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-          <div className="flex justify-between border-b border-line pb-3">
-            <span className="text-secondary">Owner</span>
-            <span className="text-primary font-mono text-xs">
-              {agent.owner.slice(0, 8)}…{agent.owner.slice(-8)}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-line pb-3">
-            <span className="text-secondary">PDA</span>
-            <span className="text-primary font-mono text-xs">
-              {agent.pubkey.slice(0, 8)}…{agent.pubkey.slice(-8)}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-line pb-3">
-            <span className="text-secondary">Registered</span>
-            <span className="text-primary">
-              {new Date(agent.registeredAt * 1000).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-line pb-3">
-            <span className="text-secondary">Status</span>
-            <span
-              className={isActive ? "text-emerald" : "text-danger"}
-            >
-              {isActive ? "Active" : agent.status === 1 ? "Suspended" : "Deregistered"}
-            </span>
-          </div>
+      {/* About */}
+      <div className="glass rounded-xl p-6">
+        <h2 className="text-primary font-semibold mb-4 text-sm">About</h2>
+        <div className="grid sm:grid-cols-2 gap-x-8 gap-y-0">
+          {[
+            { label: "Owner", value: `${agent.owner.slice(0, 8)}…${agent.owner.slice(-8)}`, mono: true },
+            { label: "PDA", value: `${agent.pubkey.slice(0, 8)}…${agent.pubkey.slice(-8)}`, mono: true },
+            {
+              label: "Registered",
+              value: new Date(agent.registeredAt * 1000).toLocaleDateString("en-US", {
+                year: "numeric", month: "short", day: "numeric",
+              }),
+            },
+            {
+              label: "Status",
+              value: isActive ? "Active" : agent.status === 1 ? "Suspended" : "Deregistered",
+              colored: isActive ? "#10b981" : "#ef4444",
+            },
+          ].map(({ label, value, mono, colored }) => (
+            <div key={label} className="flex justify-between py-3 border-b border-line last:border-0">
+              <span className="text-secondary text-sm">{label}</span>
+              <span
+                className={`text-sm ${mono ? "font-mono text-xs" : ""}`}
+                style={{ color: colored ?? "var(--text-primary)" }}
+              >
+                {value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </main>

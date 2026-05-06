@@ -51,16 +51,14 @@ export default function StatCard({
 
   return (
     <div
-      className="bg-surface border border-line rounded-xl p-6 text-center"
-      style={{
-        animation: `stat-in 0.5s ease-out ${delay}ms both`,
-      }}
+      className="glass shine rounded-xl p-6 text-center"
+      style={{ animation: `stat-in 0.5s ease-out ${delay}ms both` }}
     >
       <div className="text-3xl font-bold text-primary mb-1 tabular-nums">
         {formatted}
         {suffix}
       </div>
-      <div className="text-sm text-secondary">{label}</div>
+      <div className="text-xs text-muted">{label}</div>
     </div>
   );
 }

@@ -11,13 +11,15 @@ router.get("/stats", async (_req, res) => {
       client.getAllJobs(),
     ]);
 
+    console.log('First agent raw:', JSON.stringify(agents[0], null, 2));
+
     const jobsCompleted = jobs.filter((j) => j.status === 3).length;
     const solStaked = agents.reduce(
-      (sum, a) => sum + Number(a.stake || 0) / 1e9,
+      (sum, a) => sum + Number(BigInt(a.stake?.toString() ?? "0")) / 1e9,
       0
     );
     const solSlashed = agents.reduce(
-      (sum, a) => sum + Number(a.totalSlashed || 0) / 1e9,
+      (sum, a) => sum + Number(BigInt(a.totalSlashed?.toString() ?? "0")) / 1e9,
       0
     );
 

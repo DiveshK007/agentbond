@@ -24,7 +24,10 @@ export default async function JobsPage() {
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-danger/30 bg-danger/5 px-6 py-5 text-danger text-sm">
+        <div
+          className="rounded-xl px-6 py-5 text-danger text-sm"
+          style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}
+        >
           <span className="font-semibold">API unreachable</span> — {error}
         </div>
       ) : (

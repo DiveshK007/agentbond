@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
+import WalletProvider from "./components/WalletProvider";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -21,34 +28,41 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-bg text-primary">
+        <WalletProvider>
         <Navbar />
         {children}
-        <footer className="mt-auto border-t border-line">
-          <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted">
+        <footer className="mt-auto">
+          <div
+            className="h-px w-full"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(16,185,129,0.3), transparent)" }}
+          />
+          <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted"
+            style={{ background: "rgba(10,10,10,0.8)" }}>
             <span>Built for Solana Frontier Hackathon 2026</span>
             <div className="flex items-center gap-4">
               <a
                 href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-secondary transition-colors font-mono"
+                className="hover:text-emerald transition-colors font-mono"
               >
-                Program: {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
+                {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
               </a>
               <span className="text-line">·</span>
               <a
                 href="https://github.com/DiveshK007/agentbond"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-secondary transition-colors"
+                className="hover:text-emerald transition-colors"
               >
-                Open Source on GitHub
+                GitHub
               </a>
             </div>
           </div>
         </footer>
+        </WalletProvider>
       </body>
     </html>
   );

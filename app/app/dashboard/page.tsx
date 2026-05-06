@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useWallet } from "@solana/wallet-adapter-react";
 import type { Agent, SerializedJob } from "@/lib/types";
 import {
   agentDisplayName,
@@ -15,9 +16,9 @@ import JobCard from "../components/JobCard";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 type AgentState = Agent | false | null;
-// null = not yet looked up, false = looked up but no agent profile found
 
 export default function DashboardPage() {
+  const { publicKey } = useWallet();
   const [inputValue, setInputValue] = useState("");
   const [walletPubkey, setWalletPubkey] = useState<string | null>(null);
   const [agent, setAgent] = useState<AgentState>(null);
@@ -25,11 +26,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    const pubkey = inputValue.trim();
-    if (!pubkey) return;
-
+  const doLookup = useCallback(async (pubkey: string) => {
     setLoading(true);
     setError(null);
     setAgent(null);
@@ -49,11 +46,26 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Auto-load when wallet connects
+  useEffect(() => {
+    if (publicKey) {
+      const pk = publicKey.toBase58();
+      setInputValue(pk);
+      doLookup(pk);
+    }
+  }, [publicKey, doLookup]);
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault();
+    const pubkey = inputValue.trim();
+    if (!pubkey) return;
+    doLookup(pubkey);
   }
 
   const isAgent = agent !== null && agent !== false;
   const isUser = agent === false;
-
   const activeJobs = jobs.filter(
     (j) => j.agent === walletPubkey && (j.status === 1 || j.status === 2)
   );
@@ -73,28 +85,34 @@ export default function DashboardPage() {
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Paste Solana wallet pubkey (base58)…"
+          placeholder="Solana wallet pubkey (base58)…"
           spellCheck={false}
-          className="flex-1 bg-elevated border border-line rounded-lg px-4 py-2.5 text-primary text-sm placeholder:text-muted focus:outline-none focus:border-emerald transition-colors font-mono"
+          className="input-glass flex-1 font-mono"
         />
         <button
           type="submit"
           disabled={!inputValue.trim() || loading}
-          className="shrink-0 bg-emerald text-bg font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn-gradient shrink-0 text-sm px-5 py-2.5 rounded-lg"
         >
           {loading ? "Looking up…" : "Look Up"}
         </button>
       </form>
 
       {error && (
-        <div className="rounded-xl border border-danger/30 bg-danger/5 px-6 py-4 text-danger text-sm mb-8">
+        <div
+          className="rounded-xl px-6 py-4 text-danger text-sm mb-8"
+          style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}
+        >
           {error}
         </div>
       )}
 
       {loading && (
         <div className="text-center py-16">
-          <div className="inline-block w-6 h-6 border-2 border-line border-t-emerald rounded-full animate-spin" />
+          <div
+            className="inline-block w-6 h-6 rounded-full border-2 animate-spin"
+            style={{ borderColor: "rgba(255,255,255,0.1)", borderTopColor: "#10b981" }}
+          />
         </div>
       )}
 
@@ -109,13 +127,7 @@ export default function DashboardPage() {
   );
 }
 
-function AgentView({
-  agent,
-  activeJobs,
-}: {
-  agent: Agent;
-  activeJobs: SerializedJob[];
-}) {
+function AgentView({ agent, activeJobs }: { agent: Agent; activeJobs: SerializedJob[] }) {
   const displayName = agentDisplayName(agent.name, agent.owner);
   const isActive = agent.status === 0;
   const availableLamports = Number(agent.stake) - Number(agent.lockedStake);
@@ -123,26 +135,27 @@ function AgentView({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="bg-surface border border-line rounded-xl p-6 flex items-start justify-between gap-4">
+      <div className="glass shine rounded-xl p-6 flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <h2 className="text-xl font-bold text-primary">⚡ {displayName}</h2>
+            <h2 className="text-xl font-bold text-primary">{displayName}</h2>
             <span
-              className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
+              className="text-xs px-2.5 py-0.5 rounded-full font-medium border"
+              style={
                 isActive
-                  ? "bg-emerald/10 text-emerald border-emerald/20"
-                  : "bg-danger/10 text-danger border-danger/20"
-              }`}
+                  ? { background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.2)" }
+                  : { background: "rgba(239,68,68,0.1)", color: "#ef4444", borderColor: "rgba(239,68,68,0.2)" }
+              }
             >
               {isActive ? "Active" : "Suspended"}
             </span>
           </div>
           <p className="text-muted font-mono text-xs break-all">{agent.owner}</p>
-          <p className="text-secondary text-xs mt-1">{compRate}% completion rate</p>
+          <p className="text-muted text-xs mt-1">{compRate}% completion rate</p>
         </div>
         <Link
           href={`/agents/${agent.owner}`}
-          className="shrink-0 text-sm text-info hover:opacity-80 transition-opacity font-medium"
+          className="shrink-0 text-sm text-emerald hover:opacity-80 transition-opacity font-medium"
         >
           Full Profile →
         </Link>
@@ -150,26 +163,15 @@ function AgentView({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <DashStat label="Total Staked" value={`${formatSol(agent.stake)} SOL`} />
-        <DashStat
-          label="Locked in Jobs"
-          value={`${formatSol(agent.lockedStake)} SOL`}
-        />
-        <DashStat
-          label="Available to Withdraw"
-          value={`${formatSol(availableLamports.toString())} SOL`}
-          accent
-        />
+        <DashStat label="Locked in Jobs" value={`${formatSol(agent.lockedStake)} SOL`} />
+        <DashStat label="Available" value={`${formatSol(availableLamports.toString())} SOL`} accent />
         <DashStat
           label="Reputation"
           value={reputationDisplay(agent.reputation)}
-          colorClass={repColorClass(agent.reputation)}
+          colorStyle={repColorClass(agent.reputation)}
         />
         <DashStat label="Completed" value={String(agent.completed)} />
-        <DashStat
-          label="Failed"
-          value={String(agent.failed)}
-          danger={agent.failed > 0}
-        />
+        <DashStat label="Failed" value={String(agent.failed)} danger={agent.failed > 0} />
         <DashStat label="Total Earned" value={`${formatSol(agent.totalEarned)} SOL`} />
         <DashStat
           label="Total Slashed"
@@ -180,20 +182,14 @@ function AgentView({
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-primary font-semibold">My Active Jobs</h3>
-          <span className="text-muted text-xs">{activeJobs.length} jobs</span>
+          <h3 className="text-primary font-semibold text-sm">Active Jobs</h3>
+          <span className="text-muted text-xs">{activeJobs.length}</span>
         </div>
         {activeJobs.length === 0 ? (
-          <EmptyState
-            icon="🤖"
-            message="No active jobs"
-            sub="Jobs assigned to this agent will appear here."
-          />
+          <EmptyState message="No active jobs" sub="Jobs assigned to this agent will appear here." />
         ) : (
           <div className="flex flex-col gap-3">
-            {activeJobs.map((job) => (
-              <JobCard key={job.pubkey} job={job} />
-            ))}
+            {activeJobs.map((job) => <JobCard key={job.pubkey} job={job} />)}
           </div>
         )}
       </div>
@@ -201,23 +197,14 @@ function AgentView({
   );
 }
 
-function UserView({
-  pubkey,
-  postedJobs,
-}: {
-  pubkey: string;
-  postedJobs: SerializedJob[];
-}) {
+function UserView({ pubkey, postedJobs }: { pubkey: string; postedJobs: SerializedJob[] }) {
   return (
     <div className="flex flex-col gap-8">
-      <div className="bg-surface border border-line rounded-xl p-6">
+      <div className="glass rounded-xl p-6">
         <p className="text-muted text-xs mb-1">No agent registered for</p>
         <p className="font-mono text-primary text-sm break-all">{pubkey}</p>
         <div className="mt-5 flex items-center gap-3 flex-wrap">
-          <Link
-            href="/register"
-            className="bg-emerald text-bg font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm"
-          >
+          <Link href="/register" className="btn-gradient text-sm px-4 py-2 rounded-lg inline-block">
             Register as Agent
           </Link>
           <Link
@@ -231,20 +218,14 @@ function UserView({
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-primary font-semibold">My Posted Jobs</h3>
-          <span className="text-muted text-xs">{postedJobs.length} jobs</span>
+          <h3 className="text-primary font-semibold text-sm">Posted Jobs</h3>
+          <span className="text-muted text-xs">{postedJobs.length}</span>
         </div>
         {postedJobs.length === 0 ? (
-          <EmptyState
-            icon="📋"
-            message="No posted jobs"
-            sub="Jobs you post will appear here once submitted on-chain."
-          />
+          <EmptyState message="No posted jobs" sub="Jobs you post on-chain will appear here." />
         ) : (
           <div className="flex flex-col gap-3">
-            {postedJobs.map((job) => (
-              <JobCard key={job.pubkey} job={job} />
-            ))}
+            {postedJobs.map((job) => <JobCard key={job.pubkey} job={job} />)}
           </div>
         )}
       </div>
@@ -257,25 +238,23 @@ function DashStat({
   value,
   accent,
   danger,
-  colorClass,
+  colorStyle,
 }: {
   label: string;
   value: string;
   accent?: boolean;
   danger?: boolean;
-  colorClass?: string;
+  colorStyle?: string;
 }) {
   return (
     <div
-      className={`bg-surface border rounded-xl p-4 ${
-        accent ? "border-emerald/30" : "border-line"
-      }`}
+      className="glass rounded-xl p-4"
+      style={accent ? { borderColor: "rgba(16,185,129,0.2)" } : {}}
     >
       <p className="text-muted text-xs mb-1">{label}</p>
       <p
-        className={`font-mono font-semibold text-sm ${
-          danger ? "text-danger" : colorClass ?? "text-primary"
-        }`}
+        className={`font-mono font-semibold text-sm ${colorStyle ?? ""}`}
+        style={danger ? { color: "#ef4444" } : !colorStyle ? { color: "var(--text-primary)" } : {}}
       >
         {value}
       </p>
@@ -283,20 +262,11 @@ function DashStat({
   );
 }
 
-function EmptyState({
-  icon,
-  message,
-  sub,
-}: {
-  icon: string;
-  message: string;
-  sub: string;
-}) {
+function EmptyState({ message, sub }: { message: string; sub: string }) {
   return (
-    <div className="text-center py-12 bg-surface border border-line rounded-xl">
-      <div className="text-3xl mb-3">{icon}</div>
-      <p className="text-secondary font-medium mb-1">{message}</p>
-      <p className="text-muted text-sm">{sub}</p>
+    <div className="glass text-center py-12 rounded-xl">
+      <p className="text-secondary font-medium mb-1 text-sm">{message}</p>
+      <p className="text-muted text-xs">{sub}</p>
     </div>
   );
 }

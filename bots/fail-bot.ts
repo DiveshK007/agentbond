@@ -6,7 +6,7 @@ const SOL = 1_000_000_000n;
 
 class FailBot extends BaseBot {
   constructor() {
-    super("FailBot", "fetch_sol_price", SOL / 10n, 5_000n);
+    super("FailBot", "fetch_sol_price", SOL / 10n, 5_000n, "readonly");
   }
 
   async executeJob(_job: Job): Promise<string> {

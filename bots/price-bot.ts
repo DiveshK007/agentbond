@@ -7,7 +7,7 @@ const SOL = 1_000_000_000n;
 
 class PriceBot extends BaseBot {
   constructor() {
-    super("PriceBot", "fetch_sol_price", SOL / 2n, 10_000n);
+    super("PriceBot", "fetch_sol_price", SOL / 2n, 10_000n, "readonly");
   }
 
   async executeJob(_job: Job): Promise<string> {
