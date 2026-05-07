@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import WalletProvider from "./components/WalletProvider";
 
-const inter = Inter({
-  variable: "--font-inter",
+/**
+ * Typography:
+ * - Space Grotesk: Geometric, technical display font. NOT Inter/Roboto.
+ *   Chosen for its sharp, engineered feel — matches "protocol monitoring" aesthetic.
+ * - JetBrains Mono: Data, addresses, hashes. The language of the chain.
+ */
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -16,8 +23,9 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentBond — Economic Trust for AI Agents",
-  description: "The economic trust layer for AI agents on Solana",
+  title: "AgentBond — Trustless Accountability for AI Agents",
+  description:
+    "The economic trust layer for autonomous AI agents on Solana. Stake, execute, get paid — or get slashed.",
 };
 
 const PROGRAM_ID = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3";
@@ -28,40 +36,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${jetbrains.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col bg-bg text-primary">
         <WalletProvider>
-        <Navbar />
-        {children}
-        <footer className="mt-auto">
-          <div
-            className="h-px w-full"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(16,185,129,0.3), transparent)" }}
-          />
-          <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted"
-            style={{ background: "rgba(10,10,10,0.8)" }}>
-            <span>Built for Solana Frontier Hackathon 2026</span>
-            <div className="flex items-center gap-4">
-              <a
-                href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-emerald transition-colors font-mono"
-              >
-                {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
-              </a>
-              <span className="text-line">·</span>
-              <a
-                href="https://github.com/DiveshK007/agentbond"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-emerald transition-colors"
-              >
-                GitHub
-              </a>
+          <Navbar />
+          {children}
+          <footer className="mt-auto">
+            <div className="divider" />
+            <div
+              className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="gradient-text font-bold text-sm">AgentBond</span>
+                <span style={{ color: "var(--border-active)" }}>·</span>
+                <span>Solana Frontier Hackathon 2026</span>
+              </div>
+              <div className="flex items-center gap-4 font-mono">
+                <a
+                  href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-accent"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
+                </a>
+                <span style={{ color: "var(--border)" }}>|</span>
+                <a
+                  href="https://github.com/DiveshK007/agentbond"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-accent"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  GitHub ↗
+                </a>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
         </WalletProvider>
       </body>
     </html>

@@ -14,19 +14,19 @@ import { useState, useEffect, useCallback, useRef } from "react";
  */
 
 const BOTS = [
-  { name: "PriceBot", capability: "fetch_sol_price", stake: 1.0, rep: 8720, emoji: "📊", color: "#10b981", swig: "readonly" },
-  { name: "SwapBot", capability: "execute_swap", stake: 2.5, rep: 9100, emoji: "🔄", color: "#3b82f6", swig: "swap" },
-  { name: "OracleBot", capability: "oracle_price_feed", stake: 0.5, rep: 7500, emoji: "🔮", color: "#8b5cf6", swig: "readonly" },
-  { name: "CrossChainBot", capability: "cross_chain_swap", stake: 3.0, rep: 8200, emoji: "🌐", color: "#14b8a6", swig: "swap" },
-  { name: "PortfolioBot", capability: "portfolio_summary", stake: 1.5, rep: 6800, emoji: "💼", color: "#f59e0b", swig: "portfolio" },
+  { name: "PriceBot", capability: "fetch_sol_price", stake: 1.0, rep: 8720, icon: "◉", color: "#00e599", swig: "readonly" },
+  { name: "SwapBot", capability: "execute_swap", stake: 2.5, rep: 9100, icon: "⇄", color: "#4d94ff", swig: "swap" },
+  { name: "OracleBot", capability: "oracle_price_feed", stake: 0.5, rep: 7500, icon: "◎", color: "#a78bfa", swig: "readonly" },
+  { name: "CrossChainBot", capability: "cross_chain_swap", stake: 3.0, rep: 8200, icon: "⊕", color: "#00ccaa", swig: "swap" },
+  { name: "PortfolioBot", capability: "portfolio_summary", stake: 1.5, rep: 6800, icon: "▦", color: "#ffb224", swig: "portfolio" },
 ];
 
 const STEPS = [
-  { title: "Post a Job", subtitle: "Lock reward in escrow", icon: "📝" },
-  { title: "Bots Compete", subtitle: "Agents bid for the job", icon: "🤖" },
+  { title: "Post a Job", subtitle: "Lock reward in escrow", icon: "○" },
+  { title: "Bots Compete", subtitle: "Agents bid for the job", icon: "›" },
   { title: "Agent Executes", subtitle: "Winner performs the task", icon: "⚡" },
-  { title: "Your Decision", subtitle: "Approve or slash", icon: "⚖️" },
-  { title: "See the Impact", subtitle: "Reputation + stake update", icon: "📈" },
+  { title: "Your Decision", subtitle: "Approve or slash", icon: "⚖" },
+  { title: "See the Impact", subtitle: "Reputation + stake update", icon: "△" },
 ];
 
 type DemoOutcome = "approve" | "slash" | null;
@@ -115,18 +115,18 @@ export default function DemoPage() {
       {/* Header */}
       <div className="text-center mb-12">
         <div
-          className="inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-6 border"
+          className="inline-flex items-center gap-2 text-[11px] font-mono font-medium px-3 py-1.5 rounded mb-6"
           style={{
-            background: "rgba(16,185,129,0.08)",
-            borderColor: "rgba(16,185,129,0.25)",
-            color: "#10b981",
+            background: "var(--accent-dim)",
+            border: "1px solid var(--accent-mid)",
+            color: "var(--accent)",
           }}
         >
           <span
             className="w-1.5 h-1.5 rounded-full inline-block"
-            style={{ background: "#10b981", animation: "pulse-dot 2s ease-in-out infinite" }}
+            style={{ background: "var(--accent)", animation: "pulse-dot 2s ease-in-out infinite" }}
           />
-          Interactive Demo
+          INTERACTIVE DEMO
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold mb-4">
           Experience <span className="gradient-text">AgentBond</span> in 60 Seconds
@@ -144,10 +144,10 @@ export default function DemoPage() {
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-500 w-full"
               style={{
-                background: i < step ? "rgba(16,185,129,0.1)" : i === step ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.02)",
-                borderColor: i <= step ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.06)",
+                background: i < step ? "var(--accent-dim)" : i === step ? "rgba(0,229,153,0.04)" : "rgba(255,255,255,0.02)",
+                borderColor: i <= step ? "var(--accent-mid)" : "var(--border)",
                 border: "1px solid",
-                color: i < step ? "#10b981" : i === step ? "#fafafa" : "rgba(255,255,255,0.3)",
+                color: i < step ? "var(--accent)" : i === step ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
               <span>{i < step ? "✓" : s.icon}</span>
@@ -260,7 +260,7 @@ export default function DemoPage() {
                       : "none",
                   }}
                 >
-                  <span className="text-2xl">{bot.emoji}</span>
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-mono" style={{ background: `${bot.color}12`, color: bot.color, border: `1px solid ${bot.color}25` }}>{bot.icon}</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">{bot.name}</span>
@@ -272,8 +272,7 @@ export default function DemoPage() {
                       </span>
                       {bids.length === BOTS.length && bot.name === selectedBot.name && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: "rgba(16,185,129,0.15)", color: "#10b981" }}
+                          className="tag"
                         >
                           ★ Winner
                         </span>
@@ -308,7 +307,7 @@ export default function DemoPage() {
         {step === 3 && (
           <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{selectedBot.emoji}</span>
+              <span className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-mono" style={{ background: `${selectedBot.color}12`, color: selectedBot.color, border: `1px solid ${selectedBot.color}25` }}>{selectedBot.icon}</span>
               <h2 className="text-2xl font-bold">{selectedBot.name} Executing...</h2>
             </div>
 
@@ -327,15 +326,15 @@ export default function DemoPage() {
             ) : (
               <div className="w-full max-w-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-emerald text-sm font-medium">✅ Result Submitted</span>
-                  <span className="text-xs text-muted">— Result hash stored on-chain</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>✓ Result Submitted</span>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>— hash stored on-chain</span>
                 </div>
                 <pre
                   className="rounded-xl p-5 text-xs font-mono overflow-x-auto"
                   style={{
-                    background: "rgba(16,185,129,0.04)",
-                    border: "1px solid rgba(16,185,129,0.15)",
-                    color: "#10b981",
+                    background: "var(--accent-dim)",
+                    border: "1px solid var(--accent-mid)",
+                    color: "var(--accent)",
                   }}
                 >
                   {result}
@@ -368,10 +367,10 @@ export default function DemoPage() {
                 onClick={() => handleOutcome("approve")}
                 disabled={isAnimating}
                 className="group flex flex-col items-center gap-3 glass rounded-xl px-8 py-6 transition-all hover:scale-105"
-                style={{ border: "1px solid rgba(16,185,129,0.15)" }}
+                style={{ border: "1px solid var(--accent-mid)" }}
               >
-                <span className="text-4xl group-hover:scale-110 transition-transform">✅</span>
-                <span className="text-emerald font-bold text-lg">Approve</span>
+                <span className="text-4xl group-hover:scale-110 transition-transform">✓</span>
+                <span className="font-bold text-lg" style={{ color: "var(--accent)" }}>Approve</span>
                 <span className="text-xs text-muted text-center max-w-[160px]">
                   Agent gets paid {jobReward} SOL. Reputation increases. Stake remains.
                 </span>
@@ -381,10 +380,10 @@ export default function DemoPage() {
                 onClick={() => handleOutcome("slash")}
                 disabled={isAnimating}
                 className="group flex flex-col items-center gap-3 glass rounded-xl px-8 py-6 transition-all hover:scale-105"
-                style={{ border: "1px solid rgba(239,68,68,0.15)" }}
+                style={{ border: "1px solid rgba(255,77,106,0.15)" }}
               >
-                <span className="text-4xl group-hover:scale-110 transition-transform">🔥</span>
-                <span className="text-danger font-bold text-lg">Slash</span>
+                <span className="text-4xl group-hover:scale-110 transition-transform">✕</span>
+                <span className="font-bold text-lg" style={{ color: "var(--danger)" }}>Slash</span>
                 <span className="text-xs text-muted text-center max-w-[160px]">
                   Agent loses 5% of stake. Escrow refunded to you. Reputation drops.
                 </span>
@@ -410,7 +409,7 @@ export default function DemoPage() {
                   <span className="text-muted">→</span>
                   <span
                     className="text-lg font-mono font-bold"
-                    style={{ color: outcome === "approve" ? "#10b981" : "#ef4444" }}
+                    style={{ color: outcome === "approve" ? "var(--accent)" : "var(--danger)" }}
                   >
                     {outcome === "approve"
                       ? selectedBot.stake.toFixed(2)
@@ -438,7 +437,7 @@ export default function DemoPage() {
                 </div>
                 <div
                   className="text-xs mt-1"
-                  style={{ color: outcome === "approve" ? "#10b981" : "#ef4444" }}
+                  style={{ color: outcome === "approve" ? "var(--accent)" : "var(--danger)" }}
                 >
                   {outcome === "approve" ? "+120 (job success)" : "-500 (dispute penalty)"}
                 </div>
@@ -447,7 +446,7 @@ export default function DemoPage() {
               {/* Escrow Settlement */}
               <div className="glass rounded-xl p-5 text-center">
                 <div className="text-xs text-muted mb-2">Escrow</div>
-                <div className="text-lg font-bold" style={{ color: outcome === "approve" ? "#10b981" : "#f59e0b" }}>
+                <div className="text-lg font-bold" style={{ color: outcome === "approve" ? "var(--accent)" : "var(--warning)" }}>
                   {outcome === "approve" ? `→ ${selectedBot.name}` : "→ Refunded to you"}
                 </div>
                 <div className="text-xs text-muted mt-1">
@@ -462,8 +461,8 @@ export default function DemoPage() {
             <div
               className="w-full max-w-2xl rounded-xl p-5 mt-2"
               style={{
-                background: outcome === "approve" ? "rgba(16,185,129,0.04)" : "rgba(239,68,68,0.04)",
-                border: `1px solid ${outcome === "approve" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}`,
+                background: outcome === "approve" ? "var(--accent-dim)" : "var(--danger-dim)",
+                border: `1px solid ${outcome === "approve" ? "var(--accent-mid)" : "rgba(255,77,106,0.15)"}`,
               }}
             >
               <div className="text-xs text-muted mb-2 uppercase tracking-wider">On-Chain Summary</div>
@@ -473,15 +472,15 @@ export default function DemoPage() {
                 <span className="text-muted">Instruction</span>
                 <span className="text-primary">{outcome === "approve" ? "approve_job" : "dispute_job"}</span>
                 <span className="text-muted">Escrow</span>
-                <span style={{ color: outcome === "approve" ? "#10b981" : "#f59e0b" }}>
+                <span style={{ color: outcome === "approve" ? "var(--accent)" : "var(--warning)" }}>
                   {outcome === "approve" ? "Released to agent" : "Refunded to poster"}
                 </span>
                 <span className="text-muted">Slashing</span>
-                <span style={{ color: outcome === "slash" ? "#ef4444" : "#10b981" }}>
+                <span style={{ color: outcome === "slash" ? "var(--danger)" : "var(--accent)" }}>
                   {outcome === "slash" ? `${(selectedBot.stake * 0.05).toFixed(3)} SOL seized` : "None"}
                 </span>
                 <span className="text-muted">Reputation Δ</span>
-                <span style={{ color: outcome === "approve" ? "#10b981" : "#ef4444" }}>
+                <span style={{ color: outcome === "approve" ? "var(--accent)" : "var(--danger)" }}>
                   {outcome === "approve" ? "+120" : "-500"}
                 </span>
                 <span className="text-muted">Sponsor Tools Used</span>

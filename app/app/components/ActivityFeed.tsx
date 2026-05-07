@@ -34,21 +34,21 @@ const EVENT_TEMPLATES: Omit<ActivityEvent, "id" | "timestamp">[] = [
 ];
 
 const TYPE_ICONS: Record<string, string> = {
-  bid: "🤖",
-  complete: "✅",
-  slash: "🔥",
-  register: "📋",
-  job_posted: "📝",
-  payout: "💰",
+  bid: "›",
+  complete: "✓",
+  slash: "✕",
+  register: "+",
+  job_posted: "○",
+  payout: "◎",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  bid: "#3b82f6",
-  complete: "#10b981",
-  slash: "#ef4444",
-  register: "#8b5cf6",
-  job_posted: "#f59e0b",
-  payout: "#14b8a6",
+  bid: "#4d94ff",
+  complete: "#00e599",
+  slash: "#ff4d6a",
+  register: "#a78bfa",
+  job_posted: "#ffb224",
+  payout: "#00ccaa",
 };
 
 export default function ActivityFeed({ maxEvents = 6 }: { maxEvents?: number }) {
@@ -149,19 +149,32 @@ export default function ActivityFeed({ maxEvents = 6 }: { maxEvents?: number }) 
               opacity: 1 - i * 0.1,
             }}
           >
-            <span className="text-lg shrink-0">{TYPE_ICONS[event.type] ?? "📌"}</span>
-            <span className="text-sm text-secondary flex-1 truncate">{event.message}</span>
+            <span
+              className="w-5 h-5 rounded flex items-center justify-center text-xs font-mono font-bold shrink-0"
+              style={{
+                background: `${color}12`,
+                color: color,
+                border: `1px solid ${color}20`,
+              }}
+            >
+              {TYPE_ICONS[event.type] ?? "·"}
+            </span>
+            <span className="text-sm flex-1 truncate" style={{ color: "var(--text-secondary)" }}>
+              {event.message}
+            </span>
             {event.amount && (
               <span
                 className="text-xs font-mono font-medium shrink-0"
                 style={{
-                  color: event.amount.startsWith("-") ? "#ef4444" : event.amount.startsWith("+") ? "#10b981" : "#a3a3a3",
+                  color: event.amount.startsWith("-") ? "#ff4d6a" : event.amount.startsWith("+") ? "#00e599" : "var(--text-muted)",
                 }}
               >
                 {event.amount} SOL
               </span>
             )}
-            <span className="text-xs text-muted shrink-0 w-14 text-right">{ageStr}</span>
+            <span className="text-[10px] font-mono shrink-0 w-14 text-right" style={{ color: "var(--text-muted)" }}>
+              {ageStr}
+            </span>
           </div>
         );
       })}

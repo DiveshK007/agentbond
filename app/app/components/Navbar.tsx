@@ -5,7 +5,7 @@ import { useState } from "react";
 import WalletButton from "./WalletButton";
 
 const NAV_LINKS = [
-  { href: "/demo", label: "Try Demo", highlight: true },
+  { href: "/demo", label: "Demo", highlight: true },
   { href: "/agents", label: "Agents" },
   { href: "/jobs", label: "Jobs" },
   { href: "/dashboard", label: "Dashboard" },
@@ -18,28 +18,44 @@ export default function Navbar() {
     <nav
       className="sticky top-0 z-50"
       style={{
-        background: "rgba(20, 20, 20, 0.6)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(6, 8, 10, 0.75)",
+        backdropFilter: "blur(16px) saturate(1.2)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.2)",
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="gradient-text font-bold text-xl tracking-tight select-none">
-          AgentBond
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        {/* Logo — monogram style */}
+        <Link href="/" className="flex items-center gap-2.5 select-none group">
+          <div
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold transition-all duration-300 group-hover:shadow-[0_0_16px_rgba(0,229,153,0.3)]"
+            style={{
+              background: "linear-gradient(135deg, #00e599, #00ccaa)",
+              color: "#06080a",
+              letterSpacing: "-0.05em",
+            }}
+          >
+            AB
+          </div>
+          <span
+            className="font-bold text-sm tracking-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
+            AgentBond
+          </span>
         </Link>
 
-        <div className="hidden sm:flex items-center gap-8">
+        {/* Desktop nav */}
+        <div className="hidden sm:flex items-center gap-6">
           {NAV_LINKS.map(({ href, label, highlight }) =>
             highlight ? (
               <Link
                 key={href}
                 href={href}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                className="text-[11px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded transition-all duration-200"
                 style={{
-                  background: "rgba(16,185,129,0.1)",
-                  border: "1px solid rgba(16,185,129,0.3)",
-                  color: "#10b981",
+                  background: "var(--accent-dim)",
+                  border: "1px solid var(--accent-mid)",
+                  color: "var(--accent)",
                 }}
               >
                 ▶ {label}
@@ -53,41 +69,56 @@ export default function Navbar() {
           <WalletButton />
         </div>
 
+        {/* Mobile toggle */}
         <button
-          className="sm:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-elevated transition-colors"
+          className="sm:hidden flex flex-col gap-1.5 p-2 rounded-lg transition-colors"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
+          style={{ background: open ? "var(--surface-elevated)" : "transparent" }}
         >
           <span
-            className="block w-5 h-0.5 bg-secondary transition-all duration-200"
-            style={{ transform: open ? "translateY(8px) rotate(45deg)" : undefined }}
+            className="block w-4.5 h-px transition-all duration-200"
+            style={{
+              background: "var(--text-secondary)",
+              transform: open ? "translateY(6px) rotate(45deg)" : undefined,
+            }}
           />
           <span
-            className="block w-5 h-0.5 bg-secondary transition-all duration-200"
-            style={{ opacity: open ? 0 : undefined }}
+            className="block w-4.5 h-px transition-all duration-200"
+            style={{
+              background: "var(--text-secondary)",
+              opacity: open ? 0 : undefined,
+            }}
           />
           <span
-            className="block w-5 h-0.5 bg-secondary transition-all duration-200"
-            style={{ transform: open ? "translateY(-8px) rotate(-45deg)" : undefined }}
+            className="block w-4.5 h-px transition-all duration-200"
+            style={{
+              background: "var(--text-secondary)",
+              transform: open ? "translateY(-6px) rotate(-45deg)" : undefined,
+            }}
           />
         </button>
       </div>
 
-      <div
-        className="h-px w-full"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(16,185,129,0.25), transparent)" }}
-      />
+      {/* Bottom accent line */}
+      <div className="divider" />
 
+      {/* Mobile menu */}
       {open && (
         <div
-          className="sm:hidden px-6 py-4 flex flex-col gap-3 border-b border-line"
-          style={{ background: "rgba(10, 10, 10, 0.98)", backdropFilter: "blur(16px)" }}
+          className="sm:hidden px-6 py-4 flex flex-col gap-3"
+          style={{
+            background: "rgba(6, 8, 10, 0.98)",
+            backdropFilter: "blur(16px)",
+            borderBottom: "1px solid var(--border)",
+          }}
         >
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="text-secondary hover:text-primary text-sm transition-colors py-1.5"
+              className="text-sm py-1.5 transition-colors"
+              style={{ color: "var(--text-secondary)" }}
               onClick={() => setOpen(false)}
             >
               {label}

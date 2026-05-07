@@ -51,14 +51,24 @@ export default function StatCard({
 
   return (
     <div
-      className="glass shine rounded-xl p-6 text-center"
+      className="glass rounded-xl px-5 py-4"
       style={{ animation: `stat-in 0.5s ease-out ${delay}ms both` }}
     >
-      <div className="text-3xl font-bold text-primary mb-1 tabular-nums">
+      <div
+        className="text-2xl font-bold tabular-nums font-mono"
+        style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
+      >
         {formatted}
-        {suffix}
+        <span className="text-base font-normal" style={{ color: "var(--text-muted)" }}>
+          {suffix}
+        </span>
       </div>
-      <div className="text-xs text-muted">{label}</div>
+      <div
+        className="text-[11px] font-medium uppercase tracking-wider mt-1"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </div>
     </div>
   );
 }
