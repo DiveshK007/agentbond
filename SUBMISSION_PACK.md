@@ -111,13 +111,19 @@ For the "How are you integrating <SPONSOR>?" or equivalent question on each form
 
 ### Superteam India × Dodo Payments — Payments Track
 
-> ⚠️ **Honesty check:** AgentBond does not currently integrate Dodo Payments as a vendor. You have two options:
-> **Option A — Frame as composability:** Submit with the answer below, framing AgentBond as the on-chain settlement layer that Dodo's payment rails plug into. This is honest and accurate.
-> **Option B — Skip this track** if you're worried about fit. (You'd lose access to a $10K prize pool.)
-
-**Answer (Option A — composability framing):**
+**Answer to "How are you integrating Dodo Payments?":**
 ```
-AgentBond is on-chain payment infrastructure that complements Dodo Payments' fiat rails. Every job posted on AgentBond is a programmable payment: the user's reward is escrowed in a Solana smart contract, released atomically on agent completion, or auto-refunded with the agent's stake slashed on failure. For Indian users, the natural integration path is Dodo Payments → MoonPay/INR onramp → SOL → AgentBond escrow. The protocol's 2% fee model creates a sustainable revenue layer on top of Dodo-routed flows. Dodo handles fiat-to-crypto; AgentBond handles trustless agent compensation once funds are on-chain. The two are stacked layers of the same payment stack — fiat onramp, then programmable settlement, then automatic enforcement.
+AgentBond integrates Dodo Payments as the INR-checkout layer for premium-tier features that complement the on-chain protocol. Implementation lives in app/app/components/DodoPaymentsButton.tsx and is wired into two surfaces:
+
+1. /post — "Premium Listing" option lets job posters pay ₹199 via Dodo to feature their job at the top of the board for 24 hours. The on-chain job posting still happens normally on Solana; Dodo handles the fiat upgrade purchase via UPI / cards / netbanking.
+
+2. /register — "Verified Agent Badge" lets agent operators pay ₹499 via Dodo for a KYC'd identity badge that appears on their /agents/[pubkey] profile, complementing the on-chain stake-based reputation.
+
+The integration uses Dodo's hosted-checkout URL (set via NEXT_PUBLIC_DODO_PAYMENT_LINK) so the frontend stays GST-compliant and PCI-out-of-scope. The Solana protocol consensus is unchanged — Dodo plugs in only at the premium-tier UX layer.
+
+Why this matters for India: Indian users overwhelmingly prefer fiat-native checkout (UPI, Indian cards). Forcing them through INR → USD → USDC → SOL just to use AgentBond is a known dropoff cliff. Dodo handles the fiat-onboarding layer natively; AgentBond handles the on-chain settlement. Stacked together, this is the first Solana agent protocol built with Indian payment rails as a first-class feature, not an afterthought.
+
+See docs/dodo-payments-integration.md for the architecture rationale and roadmap.
 ```
 
 ---
@@ -195,11 +201,21 @@ The instant-hire mode of AgentBond (mode=1 on createJob) is essentially an x402-
 
 ### Build an Autonomous Onchain Agent using Zerion CLI ($2,000 USDC + second listing $5,000)
 
-**Answer:**
+**Answer to "How are you using Zerion CLI?":**
 ```
-AgentBond's PortfolioBot (bots/portfolio-bot.ts) is an autonomous on-chain agent that executes portfolio-analysis jobs posted to the AgentBond protocol. It uses Zerion's API/CLI to fetch portfolio composition and USD valuation for arbitrary Solana wallets, then submits the analysis on-chain via AgentBond's submitResult instruction. The bot stakes SOL before accepting jobs (currently 0.6 SOL collateral) and is automatically slashed if it submits incorrect or stale data — making this the first portfolio-analysis service with cryptoeconomic accuracy guarantees.
+AgentBond's PortfolioBot (bots/portfolio-bot.ts) is an autonomous on-chain agent built around Zerion CLI. When the bot picks up a portfolio-analysis job from the AgentBond Anchor program, it invokes `npx zerion-cli portfolio <wallet> --json` as a subprocess, parses the JSON output (total value, position list, chains), and submits the result hash back on-chain via the submitResult instruction.
 
-The bot pattern is reusable: extend our BaseBot class, drop in any Zerion CLI command, and you have a stake-backed Zerion-powered agent. AgentBond is the trust layer; Zerion provides the data; the result is autonomous agent labour with on-chain economic enforcement.
+The novelty: PortfolioBot has staked 0.5 SOL as collateral. Job posters who dispute the result (stale data, wrong wallet, malformed output) trigger automatic on-chain slashing of the bot's stake via AgentBond's disputeJob instruction. This makes Zerion CLI's output a *callable on-chain function* with cryptoeconomic guarantees — something neither Zerion's REST API nor any traditional portfolio service can provide.
+
+Implementation details:
+- Subprocess invocation lives in bots/portfolio-bot.ts → tryZerionCli() with a 20-second timeout
+- Falls back gracefully to the Zerion REST API if the CLI is not installed locally (so the bot is portable)
+- Bot lifecycle (registration, staking, polling, bidding, result submission) is shared via the BaseBot class
+- 25,000 lamports per job by default; configurable per agent
+
+Other Solana programs can now call AgentBond's job board with a portfolio-analysis description, escrow a small reward, and receive Zerion-derived data on-chain — with cryptoeconomic guarantees that the data is correct. This is autonomous agent labour built directly on Zerion CLI, with the trust primitive other DeFi protocols can compose into.
+
+See docs/zerion-cli-integration.md for the full architecture write-up.
 ```
 
 ---
@@ -275,8 +291,8 @@ Do them in this order — they share assets, and you build momentum:
 6. **SagaPad** — genuinely two ready-built agentic skills
 7. **Zerion CLI** (both listings) — same answer twice
 8. **Cloak / MagicBlock / Umbra** privacy — same answer three times
-9. **Superteam India × Dodo** — only if you're comfortable with the framing
-10. **KIRAPAY / Torque MCP** — last, lower confidence
+9. **Superteam India × Dodo** — real Dodo integration shipped on /post and /register
+10. **KIRAPAY / Torque MCP** — last, lower confidence (KIRAPAY still composability framing)
 
 After each form: paste the link to the submission into a notes file so you can verify they all went through.
 

@@ -111,6 +111,20 @@ const SPONSOR_TOOLS = [
     tag: "Stable",
     color: "var(--info)",
   },
+  {
+    name: "Dodo",
+    role: "INR Checkout",
+    description: "UPI / cards for Indian users on /post and /register",
+    tag: "Payments",
+    color: "var(--warning)",
+  },
+  {
+    name: "Zerion CLI",
+    role: "Portfolio Agent",
+    description: "PortfolioBot wraps zerion-cli as a slashable agent",
+    tag: "Data",
+    color: "var(--info)",
+  },
 ];
 
 const BOTS = [

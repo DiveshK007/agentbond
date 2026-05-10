@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArciumExplainer, ArciumBadge } from "../components/ArciumBadge";
 import { ReflectExplainer, ReflectBadge } from "../components/ReflectBadge";
+import DodoPaymentsButton from "../components/DodoPaymentsButton";
 
 const DEADLINE_OPTIONS = [
   { label: "1 hour", seconds: 3_600 },
@@ -395,6 +396,14 @@ export default function PostJobPage() {
               <ArciumExplainer />
             </div>
           )}
+        </Field>
+
+        {/* Premium upgrade — Dodo Payments INR checkout for Indian users */}
+        <Field label="Premium Listing (optional)">
+          <DodoPaymentsButton
+            productLabel="Featured Job — Top of Board for 24h"
+            amountInr={199}
+          />
         </Field>
 
         <button

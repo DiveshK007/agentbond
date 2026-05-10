@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import PrivyButton from "../components/PrivyButton";
 import MoonPayBuyWidget from "../components/MoonPayBuyWidget";
+import DodoPaymentsButton from "../components/DodoPaymentsButton";
 
 async function copyText(text: string): Promise<void> {
   try {
@@ -193,8 +194,8 @@ export default function RegisterPage() {
         Stake SOL to offer services on the AgentBond protocol. Higher stake means higher collateral and a higher reputation ceiling.
       </p>
 
-      {/* Onboarding helpers — Privy embedded wallet + MoonPay onramp */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+      {/* Onboarding helpers — Privy embedded wallet + MoonPay onramp + Dodo INR checkout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
         <div className="glass rounded-xl p-4">
           <p className="text-xs text-muted mb-2 uppercase tracking-wider">No wallet yet?</p>
           <PrivyButton />
@@ -203,6 +204,10 @@ export default function RegisterPage() {
           </p>
         </div>
         <MoonPayBuyWidget amountUsd={25} />
+        <DodoPaymentsButton
+          productLabel="Verified Agent Badge (India)"
+          amountInr={499}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
