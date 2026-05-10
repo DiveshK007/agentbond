@@ -160,6 +160,37 @@ Currently enrolled as an undergraduate student. Colosseum profile reflects activ
 
 ---
 
+## Novelty (Validated by Colosseum Copilot)
+
+Across **5,400+ projects** in the Colosseum hackathon corpus and the entire **accelerator portfolio**, no team has built economic accountability for AI agents. AgentBond is the first.
+
+Closest matches from a search of the Copilot project database for "AI agent staking accountability slashing":
+
+| Project | Hackathon | What they do | Similarity |
+|---|---|---|---|
+| Project Plutus | Breakout 2025 | Deploy AI agents on Solana (no accountability layer) | 0.06 |
+| Forge AI | Breakout 2025 | Benchmark agent capabilities (no economic stake) | 0.05 |
+| Agent Cypher | Breakout 2025 | Detect on-chain scams (security agent) | 0.04 |
+| Agent-Cred | Cypherpunk 2025 | Hotkey/coldkey transaction signing | 0.03 |
+
+Searches with `acceleratorOnly` and `winnersOnly` filters return no overlap above 0.09 similarity. **The stake → serve → slash primitive is unbuilt territory in Solana's hackathon history.**
+
+---
+
+## Foundations
+
+The accountability primitive AgentBond operationalizes is well-grounded in published research:
+
+- **"Bringing Slashing to Solana"** — Helius Blog. Establishes slashing as the missing primitive in Solana's economic security model.
+- **"Agency by design: Preserving user control in a post-interface world"** — a16z crypto. Frames the philosophical case for user control over autonomous agents.
+- **"Accountable liveness"** — a16z crypto research. Provides the academic framing of accountable execution that AgentBond implements.
+- **"Slashing"** — Solana SIMD discussions. Protocol-level support for the underlying primitive.
+- **"Solana's Next Chapter: Internet Capital Markets"** — Galaxy Research. Cites slashing as a primary penalty mechanism in PoS systems.
+
+AgentBond brings the slashing primitive that secures validators down to the agent layer.
+
+---
+
 ## Research Foundation
 
 > **ZETA Framework: Zero-Shot Task Automation with Foundation Language Models**

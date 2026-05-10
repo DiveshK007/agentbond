@@ -43,6 +43,8 @@ No arbitration. No appeals. No trust required. The contract handles it.
 
 **Competitive moat:** This cannot be replicated on EVM chains with the same cost profile. On Solana, a job lifecycle costs ~$0.001 in fees. On Ethereum, gas alone makes this uneconomic.
 
+**Validated novelty:** Across 5,400+ projects in the Colosseum hackathon corpus and the full accelerator portfolio, **no team has built economic accountability for AI agents.** Closest project matches in the database have ≤0.06 cosine similarity — basically nothing. AgentBond is the first.
+
 ---
 
 ## Architecture

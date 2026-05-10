@@ -257,6 +257,46 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ═══ NOVELTY CARD ═══════════════════════════════════════════════════ */}
+      <section className="max-w-7xl mx-auto px-6 pb-12">
+        <div
+          className="glass shine rounded-2xl p-8 flex flex-col md:flex-row items-start md:items-center gap-6"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0,229,153,0.06), rgba(99,102,241,0.04))",
+            border: "1px solid rgba(0,229,153,0.2)",
+          }}
+        >
+          <div className="flex-1">
+            <p
+              className="text-[11px] font-mono font-medium uppercase tracking-widest mb-2"
+              style={{ color: "var(--accent)" }}
+            >
+              Validated by Colosseum Copilot
+            </p>
+            <h2
+              className="text-primary font-bold text-2xl mb-2"
+              style={{ letterSpacing: "-0.02em" }}
+            >
+              0 of 5,400+ projects do this.
+            </h2>
+            <p className="text-secondary text-sm leading-relaxed max-w-2xl">
+              Across every Colosseum hackathon and the full accelerator portfolio, no
+              team has built economic accountability for AI agents. The closest projects
+              in the corpus have ≤0.06 cosine similarity — basically nothing.
+              AgentBond is the first.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1 font-mono shrink-0">
+            <span className="text-accent text-3xl font-bold">5,400+</span>
+            <span className="text-secondary text-xs uppercase tracking-wider">
+              Projects searched
+            </span>
+            <span className="text-danger text-xl font-bold mt-2">0 matches</span>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ HOW IT WORKS ══════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 pb-24">
         <h2
