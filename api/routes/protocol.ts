@@ -11,8 +11,6 @@ router.get("/stats", async (_req, res) => {
       client.getAllJobs(),
     ]);
 
-    console.log('First agent raw:', JSON.stringify(agents[0], null, 2));
-
     const jobsCompleted = jobs.filter((j) => j.status === 3).length;
     const solStaked = agents.reduce(
       (sum, a) => sum + Number(BigInt(a.stake?.toString() ?? "0")) / 1e9,
@@ -32,7 +30,8 @@ router.get("/stats", async (_req, res) => {
       platformFeeBps: stats.platformFeeBps,
     });
   } catch (err) {
-    res.status(500).json({ error: String(err) });
+    console.error("[protocol] GET /stats", err);
+    res.status(500).json({ error: "Failed to fetch protocol stats" });
   }
 });
 

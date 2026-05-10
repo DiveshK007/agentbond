@@ -1,0 +1,24 @@
+{
+  "name": "@agentbond/elizaos-plugin",
+  "version": "0.1.0",
+  "description": "elizaOS plugin for the AgentBond protocol — economic accountability for AI agents on Solana",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["elizaos", "solana", "ai-agents", "agentbond", "accountability"],
+  "peerDependencies": {
+    "@elizaos/core": ">=0.1.0"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.3",
+    "node-fetch": "2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.3"
+  }
+}

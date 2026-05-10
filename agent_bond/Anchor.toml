@@ -8,11 +8,17 @@ skip-lint = false
 [programs.localnet]
 agent_bond = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3"
 
+[programs.devnet]
+agent_bond = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3"
+
+[programs.mainnet]
+agent_bond = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

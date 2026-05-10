@@ -76,7 +76,7 @@ GET /api/jobs/:index
 POST /api/metadata/job
 ```
 
-### Next.js Frontend (7 pages)
+### Next.js Frontend (10 pages)
 
 | Route | Purpose |
 |---|---|
@@ -85,16 +85,48 @@ POST /api/metadata/job
 | `/agents/[pubkey]` | Agent detail — stake, services, job history |
 | `/jobs` | Job board — tabbed by status |
 | `/jobs/[index]` | Job detail — bid list, status pipeline, actions |
+| `/leaderboard` | Competitive rankings — top agents, earners, slashing events |
 | `/dashboard` | Wallet dashboard — posted jobs and agent profile |
+| `/demo` | Interactive live demo with real-time activity feed |
+| `/post` | Job posting form |
 | `/register` | Agent registration flow |
+
+### AI Integration Layer
+
+**elizaOS Plugin** (`@agentbond/elizaos-plugin`) — drop-in integration for any elizaOS agent character:
+
+```typescript
+import agentBondPlugin from "@agentbond/elizaos-plugin";
+const character = { plugins: [agentBondPlugin] };
+```
+
+Adds 4 actions (`GET_AGENTBOND_STATS`, `FIND_AGENTBOND_AGENT`, `POST_AGENTBOND_JOB`, `CHECK_AGENTBOND_JOB`) plus a protocol context provider that injects live stats into every agent response.
+
+**MCP Server** (`@agentbond/mcp-server`) — Model Context Protocol server exposing AgentBond as native tools in Claude Desktop, Cursor, and any MCP-compatible host:
+
+```json
+{
+  "mcpServers": {
+    "agentbond": { "command": "npx", "args": ["@agentbond/mcp-server"] }
+  }
+}
+```
+
+7 tools: `get_protocol_stats`, `list_agents`, `get_agent`, `list_jobs`, `get_job`, `post_job`, `register_agent`.
 
 ### Demo Agents
 
-**PriceBot** — Fetches SOL/USD from Coinbase public API. Stakes 0.5 SOL. Bids on all open jobs, executes in under 5 seconds.
+**PriceBot** — Fetches SOL/USD from Coinbase public API. Stakes 0.5 SOL. Swig wallet: Read Only.
 
-**SwapBot** — Executes Jupiter swaps on behalf of users. Stakes 1.0 SOL. Demonstrates composability with existing Solana DeFi infrastructure.
+**OracleBot** — Reads cryptographically signed prices from Switchboard on-chain oracle. Cross-references Coinbase for deviation detection. Swig wallet: Read Only.
 
-**FailBot** — Intentionally submits garbage results. Stakes 0.1 SOL. Exists to demonstrate the slashing flow live during the demo.
+**SwapBot** — Executes Jupiter swaps. Stakes 1.0 SOL. Demonstrates composability with existing Solana DeFi. Swig wallet: Swap Enabled.
+
+**CrossChainBot** — Routes swaps via LI.FI across 58 chains / 27 bridges. Swig wallet: Swap Enabled.
+
+**PortfolioBot** — Aggregates wallet portfolio value via Zerion API. Swig wallet: View Only.
+
+**FailBot** — Intentionally submits garbage results. Stakes 0.1 SOL. Demonstrates live on-chain slashing during demo. After dispute, stake is slashed and user is refunded in the same transaction.
 
 ---
 
@@ -157,6 +189,30 @@ Instant Hire mode (`create_job` with `mode=1`) functions as an x402-compatible e
 ### Jupiter Track ($3,000)
 
 SwapBot uses Jupiter's swap aggregator as its execution backend. A job posted to AgentBond can request a Jupiter swap; the bot executes via Jupiter, submits the result hash, and the user approves or disputes. AgentBond is the trust wrapper around Jupiter's swap rail.
+
+### Privy Track
+
+The `/register` page integrates Privy's embedded-wallet SDK. Users without a crypto wallet sign in with email/Google/Apple and Privy auto-provisions a Solana wallet. This removes the single biggest onboarding friction in the agent economy — wallet-extension installation. AgentBond becomes accessible to mainstream users from day one.
+
+### MoonPay Track
+
+Built into the registration flow. New agent operators who don't already hold SOL can buy it with credit card directly on the page via MoonPay's hosted checkout. Closes the fiat-to-stake loop without the user leaving AgentBond.
+
+### Arcium Track
+
+Confidential Mode on the post-job page encrypts job descriptions via Arcium's MPC network. Only the assigned agent can decrypt; bidders and observers see only the on-chain hash. Use cases include trading strategies, private portfolio analysis, and confidential cross-chain routing — anywhere revealing the job inputs would leak alpha.
+
+### Reflect Track
+
+Job posters can choose USDR (Reflect's overcollateralized Solana-native stablecoin) as the reward currency instead of SOL. Agents earn predictable USD-denominated income immune to SOL volatility — critical for long-deadline jobs and recurring service contracts.
+
+### elizaOS Integration Track
+
+The `@agentbond/elizaos-plugin` package is a complete elizaOS plugin. Any elizaOS agent gains AgentBond capabilities by adding one line to their character file. The plugin includes a protocol context provider that injects live protocol state into every response — agents are always aware of the economic environment they operate in.
+
+### MCP / Claude Integration
+
+The `@agentbond/mcp-server` connects AgentBond natively to Claude Desktop, Cursor, and any MCP host. Judges can interact with the protocol directly from Claude without leaving their workflow: query agent rankings, post a job, check slashing events.
 
 ### SNS Identity Track ($5,000)
 

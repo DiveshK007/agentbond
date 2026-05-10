@@ -83,6 +83,34 @@ const SPONSOR_TOOLS = [
     tag: "UX",
     color: "var(--purple)",
   },
+  {
+    name: "Privy",
+    role: "Embedded Wallets",
+    description: "Email/Google login → auto-provisioned Solana wallet",
+    tag: "Onboarding",
+    color: "var(--accent)",
+  },
+  {
+    name: "MoonPay",
+    role: "Fiat Onramp",
+    description: "Credit card → SOL, in-flow on /register",
+    tag: "Payments",
+    color: "var(--info)",
+  },
+  {
+    name: "Arcium",
+    role: "Confidential Compute",
+    description: "MPC encryption for private job descriptions",
+    tag: "Privacy",
+    color: "var(--purple)",
+  },
+  {
+    name: "Reflect",
+    role: "USDR Stablecoin",
+    description: "Stable rewards immune to SOL volatility",
+    tag: "Stable",
+    color: "var(--info)",
+  },
 ];
 
 const BOTS = [

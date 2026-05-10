@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { homedir } from "os";
+import { join } from "path";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { Wallet } from "@coral-xyz/anchor";
 import { AgentBondClient } from "../sdk/src/client";
@@ -16,6 +17,7 @@ import {
 
 const DEVNET_RPC = process.env.RPC_URL || "https://api.devnet.solana.com";
 const POLL_INTERVAL_MS = 30_000;
+const CONFIG_DIR = join(homedir(), ".config", "agentbond");
 
 function loadKeypair(): Keypair {
   const keypairPath =
@@ -32,6 +34,8 @@ export abstract class BaseBot {
   protected metaplexAssetAddress: string | null = null;
   private readonly biddedJobs = new Set<string>();
   private readonly processingJobs = new Set<string>();
+  private isPolling = false;
+  private bidHistoryPath!: string;
 
   constructor(
     private readonly botName: string,
@@ -52,8 +56,11 @@ export abstract class BaseBot {
       "confirmed"
     );
     this.walletPublicKey = keypair.publicKey;
-    // Wallet is NodeWallet — takes a Keypair, handles transaction signing
     this.client = new AgentBondClient(connection, new Wallet(keypair) as never);
+
+    if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
+    this.bidHistoryPath = join(CONFIG_DIR, `bids-${this.botName.toLowerCase()}.json`);
+    this.loadBidHistory();
 
     this.log(`Wallet: ${this.walletPublicKey.toBase58()}`);
 
@@ -93,6 +100,26 @@ export abstract class BaseBot {
     }, POLL_INTERVAL_MS);
   }
 
+  private loadBidHistory(): void {
+    try {
+      if (existsSync(this.bidHistoryPath)) {
+        const data = JSON.parse(readFileSync(this.bidHistoryPath, "utf8")) as string[];
+        for (const id of data) this.biddedJobs.add(id);
+        this.log(`Restored ${data.length} bid history entries from disk`);
+      }
+    } catch {
+      this.log("Could not load bid history, starting fresh");
+    }
+  }
+
+  private saveBidHistory(): void {
+    try {
+      writeFileSync(this.bidHistoryPath, JSON.stringify([...this.biddedJobs]));
+    } catch (err) {
+      this.log(`Failed to persist bid history: ${String(err)}`);
+    }
+  }
+
   private async ensureRegistered(): Promise<void> {
     try {
       await this.client.getAgent(this.walletPublicKey);
@@ -122,6 +149,8 @@ export abstract class BaseBot {
   }
 
   private async pollJobs(): Promise<void> {
+    if (this.isPolling) return;
+    this.isPolling = true;
     try {
       const jobs = await this.client.getAllJobs();
       this.log(`Found ${jobs.length} total jobs`);
@@ -138,7 +167,7 @@ export abstract class BaseBot {
       }
       for (const job of openJobs) {
         this.log(`Bidding on job index ${job.jobIndex}`);
-        void this.bidJob(job);
+        this.bidJob(job).catch((err) => this.log(`Unhandled bid error: ${String(err)}`));
       }
 
       // Loop 2: execute jobs assigned to this bot
@@ -154,10 +183,12 @@ export abstract class BaseBot {
           !this.processingJobs.has(j.jobIndex.toString())
       );
       for (const job of myJobs) {
-        void this.processJob(job);
+        this.processJob(job).catch((err) => this.log(`Unhandled process error: ${String(err)}`));
       }
     } catch (err) {
       this.log(`Poll error: ${String(err)}`);
+    } finally {
+      this.isPolling = false;
     }
   }
 
@@ -168,10 +199,12 @@ export abstract class BaseBot {
       const [jobPda] = findJob(job.jobIndex);
       const tx = await this.client.bidOnJob(jobPda, this.servicePriceLamports, 3600);
       this.log(`Bid placed on job #${idx}: ${tx}`);
+      this.saveBidHistory();
     } catch (err) {
       const msg = String(err);
       if (msg.includes("already in use")) {
         this.log(`Bid on job #${idx} already exists, marking as bid`);
+        this.saveBidHistory();
       } else {
         this.biddedJobs.delete(idx);
       }

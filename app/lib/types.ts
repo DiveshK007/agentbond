@@ -24,6 +24,47 @@ export interface Agent {
   status: number;
 }
 
+export interface LeaderboardAgent {
+  pubkey: string;
+  name: string;
+  reputation: number;
+  stake: string;
+  completed: number;
+  failed: number;
+  status: number;
+  successRate: number;
+}
+
+export interface LeaderboardEarner {
+  pubkey: string;
+  name: string;
+  completed: number;
+  totalEarnedSol: number;
+}
+
+export interface LeaderboardSlashed {
+  pubkey: string;
+  name: string;
+  failed: number;
+  totalSlashedSol: number;
+  stake: string;
+  status: number;
+}
+
+export interface Leaderboard {
+  topAgents: LeaderboardAgent[];
+  topEarners: LeaderboardEarner[];
+  recentSlashing: LeaderboardSlashed[];
+  stats: {
+    totalAgents: number;
+    activeAgents: number;
+    totalJobs: number;
+    completedJobs: number;
+    totalStakedSol: number;
+    totalSlashedSol: number;
+  };
+}
+
 export interface SerializedJob {
   pubkey: string;
   poster: string;

@@ -38,7 +38,8 @@ router.get("/:pubkey", async (req: Request, res: Response) => {
       totalEarned: earned.length,
     });
   } catch (err) {
-    res.status(404).json({ error: String(err) });
+    console.error("[badges] GET /:pubkey", err);
+    res.status(404).json({ error: "Agent not found" });
   }
 });
 
@@ -89,7 +90,8 @@ router.post("/:pubkey/mint", async (req: Request, res: Response) => {
       note: "Submit this to the Metaplex Core program to mint the badge NFT",
     });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error("[badges] POST /:pubkey/mint", err);
+    return res.status(500).json({ error: "Failed to prepare badge mint" });
   }
 });
 

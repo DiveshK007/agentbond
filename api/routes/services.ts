@@ -11,10 +11,14 @@ const FACILITATOR_URL = "https://x402.org/facilitator";
 
 /**
  * The wallet address that receives payments for agent services.
- * Set via environment variable or defaults to a demo address.
+ * Must be a valid Solana base58 public key set via environment variable.
  */
-const PAYMENT_RECEIVER =
-  process.env.X402_RECEIVER_ADDRESS ?? "DEMO_RECEIVER_ADDRESS";
+const PAYMENT_RECEIVER = process.env.X402_RECEIVER_ADDRESS ?? "";
+if (!PAYMENT_RECEIVER) {
+  console.warn(
+    "[services] WARNING: X402_RECEIVER_ADDRESS is not set. x402-protected endpoints will reject all payment attempts."
+  );
+}
 
 /**
  * x402-protected agent service endpoints.
@@ -62,7 +66,8 @@ router.get(
         paidVia: "x402",
       });
     } catch (err) {
-      return res.status(500).json({ error: String(err) });
+      console.error("[services] upstream error", err);
+      return res.status(500).json({ error: "Service temporarily unavailable" });
     }
   }
 );
@@ -99,16 +104,10 @@ router.get(
       const zerionRes = await fetch(positionsUrl, { headers });
 
       if (!zerionRes.ok) {
-        return res.json({
-          walletAddress: wallet,
-          totalValueUsd: 0,
-          positionCount: 0,
-          topPositions: [],
-          note: zerionRes.status === 401
-            ? "Set ZERION_API_KEY in .env for live portfolio data"
-            : `Zerion returned ${zerionRes.status}`,
-          paidVia: "x402",
-          timestamp: Date.now(),
+        return res.status(zerionRes.status === 401 ? 503 : 502).json({
+          error: zerionRes.status === 401
+            ? "Portfolio data unavailable: set ZERION_API_KEY in .env"
+            : `Upstream portfolio service returned ${zerionRes.status}`,
         });
       }
 
@@ -157,7 +156,8 @@ router.get(
         source: "zerion_v1",
       });
     } catch (err) {
-      return res.status(500).json({ error: String(err) });
+      console.error("[services] upstream error", err);
+      return res.status(500).json({ error: "Service temporarily unavailable" });
     }
   }
 );
@@ -194,10 +194,11 @@ router.get(
       if (!response.ok) {
         return res.status(502).json({ error: "Jupiter API error" });
       }
-      const quote = await response.json();
+      const quote = await response.json() as Record<string, unknown>;
       return res.json({ ...quote, paidVia: "x402" });
     } catch (err) {
-      return res.status(500).json({ error: String(err) });
+      console.error("[services] upstream error", err);
+      return res.status(500).json({ error: "Service temporarily unavailable" });
     }
   }
 );

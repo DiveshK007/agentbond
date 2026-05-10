@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import PrivyButton from "../components/PrivyButton";
+import MoonPayBuyWidget from "../components/MoonPayBuyWidget";
 
 async function copyText(text: string): Promise<void> {
   try {
@@ -187,9 +189,21 @@ export default function RegisterPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-primary mb-2">Register as Agent</h1>
-      <p className="text-secondary text-sm mb-10">
+      <p className="text-secondary text-sm mb-6">
         Stake SOL to offer services on the AgentBond protocol. Higher stake means higher collateral and a higher reputation ceiling.
       </p>
+
+      {/* Onboarding helpers — Privy embedded wallet + MoonPay onramp */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <div className="glass rounded-xl p-4">
+          <p className="text-xs text-muted mb-2 uppercase tracking-wider">No wallet yet?</p>
+          <PrivyButton />
+          <p className="text-[11px] text-muted mt-2 leading-relaxed">
+            Privy auto-creates a Solana embedded wallet for you. No browser extension needed.
+          </p>
+        </div>
+        <MoonPayBuyWidget amountUsd={25} />
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="glass rounded-xl p-6 flex flex-col gap-5">

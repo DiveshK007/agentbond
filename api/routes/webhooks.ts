@@ -14,7 +14,6 @@ const router = Router();
  */
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY ?? "";
-const HELIUS_RPC = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 const HELIUS_API_BASE = "https://api.helius.xyz/v0";
 const PROGRAM_ID = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3";
 
@@ -139,7 +138,8 @@ router.get("/transactions/:address", async (req: Request, res: Response) => {
       source: "helius_enhanced",
     });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error("[webhooks] GET /transactions/:address", err);
+    return res.status(500).json({ error: "Failed to fetch transaction history" });
   }
 });
 
@@ -187,7 +187,8 @@ router.post("/register", async (req: Request, res: Response) => {
       monitoring: PROGRAM_ID,
     });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error("[webhooks] POST /register", err);
+    return res.status(500).json({ error: "Failed to register webhook" });
   }
 });
 

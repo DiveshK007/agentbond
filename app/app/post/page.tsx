@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArciumExplainer, ArciumBadge } from "../components/ArciumBadge";
+import { ReflectExplainer, ReflectBadge } from "../components/ReflectBadge";
 
 const DEADLINE_OPTIONS = [
   { label: "1 hour", seconds: 3_600 },
@@ -92,6 +94,8 @@ export default function PostJobPage() {
   const [sdkCommand, setSdkCommand] = useState("");
   const [previewing, setPreviewing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confidential, setConfidential] = useState(false);
+  const [rewardCurrency, setRewardCurrency] = useState<"SOL" | "USDR">("SOL");
 
   const rewardLamports = Math.round(parseFloat(rewardSOL || "0") * 1e9);
   const deadlineLabel = DEADLINE_OPTIONS.find((o) => o.seconds === deadlineSecs)?.label ?? "";
@@ -132,13 +136,21 @@ export default function PostJobPage() {
         <StepIndicator current={2} />
         <h1 className="text-2xl font-bold text-primary mb-8">Review & Submit</h1>
 
+        {(confidential || rewardCurrency === "USDR") && (
+          <div className="flex items-center gap-2 mb-3">
+            {confidential && <ArciumBadge size="sm" />}
+            {rewardCurrency === "USDR" && <ReflectBadge size="sm" />}
+          </div>
+        )}
+
         <div className="glass rounded-xl p-6 mb-5 flex flex-col gap-4">
           {[
             { label: "Description", value: description, multiline: true },
             { label: "SHA-256 Hash", value: hash, mono: true, small: true },
-            { label: "Reward", value: `${rewardSOL} SOL`, mono: true },
+            { label: "Reward", value: `${rewardSOL} ${rewardCurrency === "USDR" ? "USDR" : "SOL"}`, mono: true },
             { label: "Deadline", value: deadlineLabel },
             { label: "Mode", value: mode === 1 ? "Instant Hire" : "Job Board" },
+            { label: "Privacy", value: confidential ? "Arcium-encrypted" : "Public" },
             ...(mode === 1 ? [{ label: "Agent", value: agentPubkey, mono: true, small: true }] : []),
           ].map(({ label, value, mono, small, multiline }) => (
             <div key={label} className="flex flex-col gap-1 border-b border-line pb-4 last:border-0 last:pb-0">
@@ -304,6 +316,86 @@ export default function PostJobPage() {
             </Link>
           </Field>
         )}
+
+        {/* Reward currency — SOL or USDR (Reflect stablecoin) */}
+        <Field label="Reward Currency">
+          <div
+            className="flex gap-0 p-1 rounded-lg"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setRewardCurrency("SOL")}
+              className="flex-1 py-2 rounded-md text-sm font-medium transition-all"
+              style={
+                rewardCurrency === "SOL"
+                  ? { background: "rgba(16,185,129,0.15)", color: "#10b981" }
+                  : { color: "var(--text-secondary)" }
+              }
+            >
+              ◎ SOL
+            </button>
+            <button
+              type="button"
+              onClick={() => setRewardCurrency("USDR")}
+              className="flex-1 py-2 rounded-md text-sm font-medium transition-all inline-flex items-center justify-center gap-2"
+              style={
+                rewardCurrency === "USDR"
+                  ? { background: "rgba(0,200,255,0.15)", color: "#67e8f9" }
+                  : { color: "var(--text-secondary)" }
+              }
+            >
+              <ReflectBadge size="xs" /> Stablecoin
+            </button>
+          </div>
+          {rewardCurrency === "USDR" && (
+            <div className="mt-3">
+              <ReflectExplainer />
+            </div>
+          )}
+        </Field>
+
+        {/* Confidential mode — Arcium MPC */}
+        <Field label="Privacy">
+          <button
+            type="button"
+            onClick={() => setConfidential(!confidential)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all"
+            style={{
+              background: confidential
+                ? "rgba(139,92,246,0.08)"
+                : "rgba(255,255,255,0.02)",
+              borderColor: confidential
+                ? "rgba(139,92,246,0.3)"
+                : "var(--border)",
+            }}
+          >
+            <span className="inline-flex items-center gap-2 text-sm">
+              <ArciumBadge size="sm" />
+              <span className={confidential ? "text-primary" : "text-secondary"}>
+                Confidential mode
+              </span>
+            </span>
+            <span
+              className="w-9 h-5 rounded-full relative transition-colors"
+              style={{
+                background: confidential ? "#a78bfa" : "rgba(255,255,255,0.1)",
+              }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform"
+                style={{
+                  transform: confidential ? "translateX(18px)" : "translateX(2px)",
+                }}
+              />
+            </span>
+          </button>
+          {confidential && (
+            <div className="mt-3">
+              <ArciumExplainer />
+            </div>
+          )}
+        </Field>
 
         <button
           onClick={handlePreview}

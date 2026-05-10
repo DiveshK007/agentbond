@@ -1,4 +1,4 @@
-import type { Agent, ProtocolStats, SerializedJob } from "./types";
+import type { Agent, ProtocolStats, SerializedJob, Leaderboard } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -40,4 +40,10 @@ export async function fetchJob(index: number): Promise<SerializedJob> {
   });
   if (!res.ok) throw new Error(`Job not found: ${res.status}`);
   return res.json() as Promise<SerializedJob>;
+}
+
+export async function fetchLeaderboard(): Promise<Leaderboard> {
+  const res = await fetch(`${API_BASE}/api/leaderboard`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
+  return res.json() as Promise<Leaderboard>;
 }

@@ -3,6 +3,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import WalletProvider from "./components/WalletProvider";
+import PrivyAuthProvider from "./components/PrivyAuthProvider";
 
 /**
  * Typography:
@@ -41,44 +42,46 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-primary">
-        <WalletProvider>
-          <Navbar />
-          {children}
-          <footer className="mt-auto">
-            <div className="divider" />
-            <div
-              className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
-              style={{ color: "var(--text-muted)" }}
-            >
-              <div className="flex items-center gap-3">
-                <span className="gradient-text font-bold text-sm">AgentBond</span>
-                <span style={{ color: "var(--border-active)" }}>·</span>
-                <span>Solana Frontier Hackathon 2026</span>
+        <PrivyAuthProvider>
+          <WalletProvider>
+            <Navbar />
+            {children}
+            <footer className="mt-auto">
+              <div className="divider" />
+              <div
+                className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="gradient-text font-bold text-sm">AgentBond</span>
+                  <span style={{ color: "var(--border-active)" }}>·</span>
+                  <span>Solana Frontier Hackathon 2026</span>
+                </div>
+                <div className="flex items-center gap-4 font-mono">
+                  <a
+                    href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors hover:text-accent"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
+                  </a>
+                  <span style={{ color: "var(--border)" }}>|</span>
+                  <a
+                    href="https://github.com/DiveshK007/agentbond"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors hover:text-accent"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    GitHub ↗
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center gap-4 font-mono">
-                <a
-                  href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors hover:text-accent"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
-                </a>
-                <span style={{ color: "var(--border)" }}>|</span>
-                <a
-                  href="https://github.com/DiveshK007/agentbond"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors hover:text-accent"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  GitHub ↗
-                </a>
-              </div>
-            </div>
-          </footer>
-        </WalletProvider>
+            </footer>
+          </WalletProvider>
+        </PrivyAuthProvider>
       </body>
     </html>
   );
