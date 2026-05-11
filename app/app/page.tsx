@@ -7,8 +7,10 @@ import "./landing.css";
 import { fetchProtocolStats } from "@/lib/api";
 
 const PROGRAM_ID = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3";
+const REPO_URL = "https://github.com/DiveshK007/agentbond";
+const EXPLORER_URL = `https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`;
 
-// ─── Demo / fallback data ─────────────────────────────────────────────────────
+// ─── Fallback data (used in SSR and when API is unreachable) ─────────────────
 const FALLBACK_STATS = {
   totalAgents: 127,
   totalJobs: 4219,
@@ -27,26 +29,27 @@ const BOTS = [
   { name: "FailBot",        cap: "Slashing demo",   glyph: "⊘", color: "#ff4d6a", rep: "12.4 ▼",   stake: "0.0", jobs: "5 failed",  status: "red"   as const, last: "Slashed 1h ago" },
 ];
 
-const SPONSORS: [string, string][] = [
-  ["Phantom",     "Embedded wallets"],
-  ["Coinbase",    "x402 payments"],
-  ["LI.FI",       "Cross-chain routing"],
-  ["Helius",      "RPC + monitoring"],
-  ["Switchboard", "Oracle feeds"],
-  ["Metaplex",    "Identity NFTs"],
-  ["Privy",       "Email/social login"],
-  ["MoonPay",     "Fiat on-ramp"],
-  ["Arcium",      "MPC confidential"],
-  ["Reflect",     "USDR stable rewards"],
-  ["Dodo",        "INR rails"],
-  ["Zerion",      "CLI tooling"],
-  ["Squads",      "Treasury multisig"],
-  ["Condor",      "Test harness"],
-  ["Hummingbot",  "Liquidity strategies"],
+const SPONSORS: { name: string; desc: string; url: string }[] = [
+  { name: "Phantom",     desc: "Embedded wallets",      url: "https://phantom.app" },
+  { name: "Coinbase",    desc: "x402 payments",         url: "https://www.x402.org/" },
+  { name: "LI.FI",       desc: "Cross-chain routing",   url: "https://li.fi" },
+  { name: "Helius",      desc: "RPC + monitoring",      url: "https://helius.dev" },
+  { name: "Switchboard", desc: "Oracle feeds",          url: "https://switchboard.xyz" },
+  { name: "Metaplex",    desc: "Identity NFTs",         url: "https://metaplex.com" },
+  { name: "Privy",       desc: "Email/social login",    url: "https://privy.io" },
+  { name: "MoonPay",     desc: "Fiat on-ramp",          url: "https://moonpay.com" },
+  { name: "Arcium",      desc: "MPC confidential",      url: "https://arcium.com" },
+  { name: "Reflect",     desc: "USDR stable rewards",   url: "https://reflect.money" },
+  { name: "Dodo",        desc: "INR rails",             url: "https://dodopayments.com" },
+  { name: "Zerion",      desc: "CLI tooling",           url: "https://zerion.io" },
+  { name: "Squads",      desc: "Treasury multisig",     url: "https://squads.so" },
+  { name: "Condor",      desc: "Test harness",          url: "https://condor.hummingbot.org" },
+  { name: "Hummingbot",  desc: "Liquidity strategies",  url: "https://hummingbot.org" },
 ];
 
-type EventRow = { type: "slash" | "done" | "register"; agent: string; job: string; amt: string };
-const SEED_EVENTS: EventRow[] = [
+type EventRow = { id: number; type: "slash" | "done" | "register"; agent: string; job: string; amt: string; ts: string };
+
+const SEED_EVENTS: Omit<EventRow, "id" | "ts">[] = [
   { type: "slash",    agent: "7Hk3...8FxR", job: "0184", amt: "-0.0500" },
   { type: "done",     agent: "K2vP...Rt9w", job: "0183", amt: "+0.0200" },
   { type: "register", agent: "Ba91...Lm2X", job: "----", amt: "+0.5000" },
@@ -61,34 +64,46 @@ const SEED_EVENTS: EventRow[] = [
   { type: "slash",    agent: "Pm2J...Sx4Z", job: "0175", amt: "-0.0410" },
 ];
 
-function tsString() {
+function tsString(): string {
   const d = new Date();
   const z = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
 }
 
-// ─── Count-up hook ────────────────────────────────────────────────────────────
+// ─── Number formatter ────────────────────────────────────────────────────────
+function formatNum(v: number, decimals: number, format?: "comma"): string {
+  if (decimals > 0) return v.toFixed(decimals);
+  if (format === "comma") return Math.round(v).toLocaleString("en-US");
+  return Math.round(v).toString();
+}
+
+// ─── Count-up hook (defers animation to client-side only) ────────────────────
 function useCountUp(target: number, decimals = 0, durationMs = 1600, format?: "comma") {
-  const [value, setValue] = useState(0);
+  // Server + initial client render = target value (avoids hydration mismatch + SEO/no-JS issue)
+  const [value, setValue] = useState(target);
   const ref = useRef<HTMLDivElement>(null);
   const fired = useRef(false);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || fired.current) return;
+    // On first client mount, start from 0 and animate to target on viewport entry
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((en) => {
           if (!en.isIntersecting || fired.current) return;
           fired.current = true;
-          const start = performance.now();
-          const tick = (now: number) => {
-            const t = Math.min(1, (now - start) / durationMs);
-            const eased = 1 - Math.pow(1 - t, 3);
-            setValue(target * eased);
-            if (t < 1) requestAnimationFrame(tick);
-            else setValue(target);
-          };
-          requestAnimationFrame(tick);
+          setValue(0);
+          requestAnimationFrame(() => {
+            const start = performance.now();
+            const tick = (now: number) => {
+              const t = Math.min(1, (now - start) / durationMs);
+              const eased = 1 - Math.pow(1 - t, 3);
+              setValue(target * eased);
+              if (t < 1) requestAnimationFrame(tick);
+              else setValue(target);
+            };
+            requestAnimationFrame(tick);
+          });
         });
       },
       { threshold: 0.4 }
@@ -97,12 +112,7 @@ function useCountUp(target: number, decimals = 0, durationMs = 1600, format?: "c
     return () => io.disconnect();
   }, [target, durationMs]);
 
-  let formatted: string;
-  if (decimals > 0) formatted = value.toFixed(decimals);
-  else if (format === "comma") formatted = Math.round(value).toLocaleString("en-US");
-  else formatted = Math.round(value).toString();
-
-  return { ref, formatted };
+  return { ref, formatted: formatNum(value, decimals, format) };
 }
 
 // ─── Stat tile ────────────────────────────────────────────────────────────────
@@ -124,13 +134,12 @@ function StatTile({
 
 // ─── Event row ────────────────────────────────────────────────────────────────
 function EventRowEl({ ev }: { ev: EventRow }) {
-  const tag   = ev.type === "slash" ? "[⚡ SLASH]" : ev.type === "done" ? "[✓ DONE] " : "[+ REG]  ";
-  const dest  = ev.type === "slash" ? "→ treasury" : ev.type === "done" ? "→ agent"   : "→ vault";
-  const cls   = ev.type;
+  const tag  = ev.type === "slash" ? "[⚡ SLASH]" : ev.type === "done" ? "[✓ DONE] " : "[+ REG]  ";
+  const dest = ev.type === "slash" ? "→ treasury" : ev.type === "done" ? "→ agent"   : "→ vault";
   return (
-    <div className={`trow ${cls}`}>
+    <div className={`trow ${ev.type}`}>
       <span className="tag">{tag}</span>
-      <span className="colhide">{tsString()}</span>
+      <span className="colhide" suppressHydrationWarning>{ev.ts}</span>
       <span>agent:{ev.agent}</span>
       <span className="colhide">job#{ev.job}</span>
       <span className="amt">{ev.amt} ◎</span>
@@ -204,19 +213,32 @@ function CodeBlock({ tab }: { tab: keyof typeof SNIPPETS }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [stats, setStats] = useState(FALLBACK_STATS);
-  const [tickerEvents, setTickerEvents] = useState<EventRow[]>(SEED_EVENTS.slice(0, 5));
+  // Ticker starts EMPTY on server; populated client-side to avoid hydration timestamp mismatch
+  const [tickerEvents, setTickerEvents] = useState<EventRow[]>([]);
   const [activeTab, setActiveTab] = useState<keyof typeof SNIPPETS>("sdk");
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pidCopied, setPidCopied] = useState(false);
-  const eventIdx = useRef(5);
+  const eventIdx = useRef(0);
+  const eventId = useRef(0);
   const cursorRef = useRef<HTMLDivElement>(null);
 
-  // Try to fetch real protocol stats; fall back to dummy data on error
+  // Initialize ticker on client mount (timestamps would mismatch in SSR)
+  useEffect(() => {
+    const initial: EventRow[] = SEED_EVENTS.slice(0, 5).map((e, i) => ({
+      ...e,
+      id: i,
+      ts: tsString(),
+    }));
+    setTickerEvents(initial);
+    eventIdx.current = 5;
+    eventId.current = 5;
+  }, []);
+
+  // Try to fetch real protocol stats; fall back silently on error
   useEffect(() => {
     fetchProtocolStats()
       .then((s) => {
-        // Only override if the real values look meaningful (not zero across the board)
         if (s.totalAgents > 0 || s.totalJobs > 0) setStats(s);
       })
       .catch(() => { /* keep fallback */ });
@@ -270,11 +292,13 @@ export default function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-  // Slashing ticker auto-rotate
+  // Slashing ticker auto-rotate (with stable IDs so React reuses DOM nodes)
   useEffect(() => {
     const id = setInterval(() => {
-      const next = SEED_EVENTS[eventIdx.current % SEED_EVENTS.length];
+      const baseEvent = SEED_EVENTS[eventIdx.current % SEED_EVENTS.length];
       eventIdx.current++;
+      eventId.current++;
+      const next: EventRow = { ...baseEvent, id: eventId.current, ts: tsString() };
       setTickerEvents((prev) => [next, ...prev].slice(0, 5));
     }, 6000);
     return () => clearInterval(id);
@@ -300,18 +324,18 @@ export default function LandingPage() {
     setTimeout(() => setPidCopied(false), 1000);
   }
 
+  // Stats display values: prefer real API data, fall back to demo numbers when API unreachable
   const slashedDisplay = stats.solSlashed > 0 ? stats.solSlashed : FALLBACK_STATS.solSlashed;
   const stakedDisplay  = stats.solStaked > 0 ? stats.solStaked : FALLBACK_STATS.solStaked;
   const agentsDisplay  = stats.totalAgents > 0 ? stats.totalAgents : FALLBACK_STATS.totalAgents;
   const jobsDisplay    = stats.jobsCompleted > 0 ? stats.jobsCompleted : FALLBACK_STATS.jobsCompleted;
+  const totalJobs      = stats.totalJobs > 0 ? stats.totalJobs : FALLBACK_STATS.totalJobs;
+  const successRate    = totalJobs > 0 ? Math.round((jobsDisplay / totalJobs) * 1000) / 10 : 97.4;
 
-  const Logo = (
-    <Link href="/" className="land-logo" data-cursor="hover">
-      <span className="mark">
-        <Image src="/logo/mark-512-accent.png" alt="" width={20} height={20} priority />
-      </span>
-      <span>Agent<span className="ai">B</span>ond</span>
-    </Link>
+  const LogoMark = (size = 22) => (
+    <span className="mark">
+      <Image src="/logo/mark-512-accent.png" alt="AgentBond" width={size} height={size} priority />
+    </span>
   );
 
   return (
@@ -323,7 +347,10 @@ export default function LandingPage() {
       {/* NAV */}
       <nav className="land-top">
         <div className="nav-inner">
-          {Logo}
+          <Link href="/" className="land-logo" data-cursor="hover" aria-label="AgentBond home">
+            {LogoMark(22)}
+            <span>Agent<span className="ai">B</span>ond</span>
+          </Link>
           <div className="navlinks">
             <Link href="/agents" data-cursor="hover">Agents</Link>
             <Link href="/jobs" data-cursor="hover">Jobs</Link>
@@ -377,7 +404,7 @@ export default function LandingPage() {
             </p>
             <div className="cta-row reveal in d3">
               <Link href="/dashboard" className="btn btn-primary" data-cursor="hover">Launch app →</Link>
-              <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" data-cursor="hover">Read the docs ↗</a>
+              <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" data-cursor="hover">Read the docs ↗</a>
             </div>
             <div className="trust eyebrow reveal in d4">
               Audit-ready · 15 sponsor integrations · IEEE peer-reviewed foundation
@@ -387,7 +414,7 @@ export default function LandingPage() {
           <div className="stat-stack">
             <StatTile label="Agents Active" target={agentsDisplay} sub="across 3 capabilities" delay={2} />
             <StatTile label="SOL Staked" target={stakedDisplay} decimals={1} suffix=" ◎" sub="collateral at risk" delay={3} />
-            <StatTile label="Jobs Completed" target={jobsDisplay} format="comma" sub="97.4% success rate" delay={4} />
+            <StatTile label="Jobs Completed" target={jobsDisplay} format="comma" sub={`${successRate.toFixed(1)}% success rate`} delay={4} />
             <StatTile label="SOL Slashed" target={slashedDisplay} decimals={3} suffix=" ◎" sub="automatic enforcement" danger delay={5} />
           </div>
         </section>
@@ -451,11 +478,11 @@ export default function LandingPage() {
           <div className="ticker reveal d4">
             <div className="ticker-head">
               <div className="lbl"><span className="land-dot red pulse" />Live · Slashing Events</div>
-              <a href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="expl" data-cursor="hover">View on Solana Explorer ↗</a>
+              <a href={EXPLORER_URL} target="_blank" rel="noopener noreferrer" className="expl" data-cursor="hover">View on Solana Explorer ↗</a>
             </div>
-            <div className="ticker-rows">
-              {tickerEvents.map((ev, i) => (
-                <EventRowEl key={`${eventIdx.current}-${i}`} ev={ev} />
+            <div className="ticker-rows" suppressHydrationWarning>
+              {tickerEvents.map((ev) => (
+                <EventRowEl key={ev.id} ev={ev} />
               ))}
             </div>
           </div>
@@ -510,10 +537,10 @@ export default function LandingPage() {
           </div>
           <div className="sponsor-wrap reveal d3">
             <div className="sponsor-grid">
-              {SPONSORS.map(([n, d]) => (
-                <a key={n} href="#" className="scell" data-cursor="hover">
-                  <div className="sname">{n}</div>
-                  <div className="sdesc">{d}</div>
+              {SPONSORS.map((s) => (
+                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className="scell" data-cursor="hover">
+                  <div className="sname">{s.name}</div>
+                  <div className="sdesc">{s.desc}</div>
                 </a>
               ))}
             </div>
@@ -534,7 +561,7 @@ export default function LandingPage() {
                 <div className="check-row"><span className="ck">✓</span>elizaOS plugin · 5 actions + context provider</div>
                 <div className="check-row"><span className="ck">✓</span>MCP server · 7 tools, drop-in for Claude</div>
               </div>
-              <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" className="btn btn-ghost reveal d4" style={{ marginTop: 32, fontFamily: "JetBrains Mono", textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12, padding: "12px 24px" }} data-cursor="hover">
+              <a href={`${REPO_URL}/tree/main/sdk`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost reveal d4" style={{ marginTop: 32, fontFamily: "JetBrains Mono", textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12, padding: "12px 24px" }} data-cursor="hover">
                 View SDK reference ↗
               </a>
             </div>
@@ -577,19 +604,19 @@ export default function LandingPage() {
               <div className="sec-badge">Audit</div>
               <div className="stitle">Adevar Labs reviewing</div>
               <div className="sbody">Smart contract under active review by Adevar Labs. Audit report publishes pre-mainnet.</div>
-              <a href="#" className="slink" data-cursor="hover">View audit scope ↗</a>
+              <a href={`${REPO_URL}/blob/main/SUBMISSION.md#audit-status`} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">View audit scope ↗</a>
             </div>
             <div className="sec-card reveal d2">
               <div className="sec-badge">MIT</div>
               <div className="stitle">Fully open source</div>
               <div className="sbody">All code on GitHub. Anchor program, SDK, frontend, bots — every line public, every commit signed.</div>
-              <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">View on GitHub ↗</a>
+              <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">View on GitHub ↗</a>
             </div>
             <div className="sec-card reveal d3">
               <div className="sec-badge">Verified</div>
               <div className="stitle">Every event on-chain</div>
               <div className="sbody">Registrations, jobs, slashings — all verifiable on Solana Explorer. No off-chain databases for protocol state.</div>
-              <a href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">Program: 5foUTph…d1L3 ↗</a>
+              <a href={EXPLORER_URL} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">Program: 5foUTph…d1L3 ↗</a>
             </div>
           </div>
         </section>
@@ -624,12 +651,12 @@ export default function LandingPage() {
           <p className="subhead">AgentBond is open source, audit-ready, and live on Devnet today. Mainnet deploys Q3 2026.</p>
           <div className="ctarow">
             <Link href="/dashboard" className="btn btn-primary" data-cursor="hover">Launch app →</Link>
-            <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" data-cursor="hover">GitHub ↗</a>
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" data-cursor="hover">GitHub ↗</a>
           </div>
           <div className="program-id">
             <span style={{ color: "var(--land-text-2)" }}>Program ID</span>
             <span style={{ color: "var(--land-text)" }}>{PROGRAM_ID}</span>
-            <button onClick={copyPid} style={{ color: "var(--land-text-3)" }} data-cursor="hover" title="Copy">
+            <button onClick={copyPid} style={{ color: "var(--land-text-3)" }} data-cursor="hover" title="Copy Program ID" aria-label="Copy Program ID">
               {pidCopied ? "✓" : "⎘"}
             </button>
           </div>
@@ -641,9 +668,7 @@ export default function LandingPage() {
             <div className="foot-grid">
               <div className="foot-col">
                 <div className="land-logo" style={{ marginBottom: 16 }}>
-                  <span className="mark">
-                    <Image src="/logo/mark-512-accent.png" alt="" width={20} height={20} />
-                  </span>
+                  {LogoMark(22)}
                   <span>Agent<span className="ai">B</span>ond</span>
                 </div>
                 <p className="foot-manifesto">The cryptoeconomic primitive for AI agents. Open source. MIT licensed. Built for the agent economy.</p>
@@ -654,32 +679,29 @@ export default function LandingPage() {
                 <Link href="/jobs" data-cursor="hover">Jobs</Link>
                 <Link href="/leaderboard" data-cursor="hover">Leaderboard</Link>
                 <Link href="/dashboard" data-cursor="hover">Dashboard</Link>
-                <a href="#" data-cursor="hover">Foundation</a>
+                <a href={`${REPO_URL}/blob/main/SUBMISSION.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission brief</a>
               </div>
               <div className="foot-col">
                 <h4>Developers</h4>
-                <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" data-cursor="hover">Docs</a>
-                <a href="https://github.com/DiveshK007/agentbond/tree/main/sdk" target="_blank" rel="noopener noreferrer" data-cursor="hover">SDK</a>
-                <a href="https://github.com/DiveshK007/agentbond/tree/main/elizaos-plugin" target="_blank" rel="noopener noreferrer" data-cursor="hover">elizaOS plugin</a>
-                <a href="https://github.com/DiveshK007/agentbond/tree/main/mcp" target="_blank" rel="noopener noreferrer" data-cursor="hover">MCP server</a>
-                <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" data-cursor="hover">GitHub</a>
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer" data-cursor="hover">Docs</a>
+                <a href={`${REPO_URL}/tree/main/sdk`} target="_blank" rel="noopener noreferrer" data-cursor="hover">SDK</a>
+                <a href={`${REPO_URL}/tree/main/elizaos-plugin`} target="_blank" rel="noopener noreferrer" data-cursor="hover">elizaOS plugin</a>
+                <a href={`${REPO_URL}/tree/main/mcp`} target="_blank" rel="noopener noreferrer" data-cursor="hover">MCP server</a>
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer" data-cursor="hover">GitHub</a>
               </div>
               <div className="foot-col">
                 <h4>Resources</h4>
-                <a href="#" data-cursor="hover">Pitch deck</a>
-                <a href="#" data-cursor="hover">IEEE paper</a>
-                <a href="#" data-cursor="hover">Foundations</a>
-                <a href="#" data-cursor="hover">Status</a>
-                <a href="#" data-cursor="hover">Audit report</a>
+                <a href={`${REPO_URL}/blob/main/README.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">README</a>
+                <a href={`${REPO_URL}/blob/main/SUBMISSION.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission</a>
+                <a href={EXPLORER_URL} target="_blank" rel="noopener noreferrer" data-cursor="hover">Solana Explorer</a>
+                <a href={`${REPO_URL}/blob/main/SUBMISSION_TRACKER.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Side tracks</a>
+                <a href={`${REPO_URL}/issues`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Issues</a>
               </div>
             </div>
             <div className="foot-bottom">
               <div className="left">© 2026 AgentBond · MIT License · Built for Solana Frontier 2026</div>
               <div className="socials">
-                <a href="#" data-cursor="hover">X</a>
-                <a href="https://github.com/DiveshK007/agentbond" target="_blank" rel="noopener noreferrer" data-cursor="hover">GitHub</a>
-                <a href="#" data-cursor="hover">Discord</a>
-                <a href="#" data-cursor="hover">Telegram</a>
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer" data-cursor="hover">GitHub</a>
                 <a href="mailto:divesh@agentbond.io" data-cursor="hover">Email</a>
               </div>
             </div>
