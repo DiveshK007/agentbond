@@ -9,3 +9,5 @@ node_modules/
 .claude/
 bots/.env
 api/.env
+skills-lock.json
+**/.DS_Store
