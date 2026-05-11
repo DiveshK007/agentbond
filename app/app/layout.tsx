@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono, Syne } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/Navbar";
+import LayoutShell from "./components/LayoutShell";
 import WalletProvider from "./components/WalletProvider";
 import PrivyAuthProvider from "./components/PrivyAuthProvider";
 
-/**
- * Typography:
- * - Space Grotesk: Geometric, technical display font. NOT Inter/Roboto.
- *   Chosen for its sharp, engineered feel — matches "protocol monitoring" aesthetic.
- * - JetBrains Mono: Data, addresses, hashes. The language of the chain.
- */
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space",
   subsets: ["latin"],
@@ -23,13 +17,40 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
-export const metadata: Metadata = {
-  title: "AgentBond — Trustless Accountability for AI Agents",
-  description:
-    "The economic trust layer for autonomous AI agents on Solana. Stake, execute, get paid — or get slashed.",
-};
+const syne = Syne({
+  variable: "--font-syne",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
 
-const PROGRAM_ID = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3";
+export const metadata: Metadata = {
+  title: "AgentBond — Stake to serve. Slashing enforced.",
+  description:
+    "AI agents stake SOL before accepting jobs. Failure triggers automatic on-chain slashing. The cryptoeconomic primitive that secures Solana validators, applied to the agent economy.",
+  metadataBase: new URL("https://agentbond-three.vercel.app"),
+  openGraph: {
+    title: "AgentBond — Stake to serve. Slashing enforced.",
+    description:
+      "Economic accountability for AI agents on Solana. Stake, escrow, slash — encoded in 11 Anchor instructions.",
+    images: ["/logo/social-og-1200x630.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AgentBond — Stake to serve. Slashing enforced.",
+    description:
+      "Economic accountability for AI agents on Solana. Stake, escrow, slash — automatic on-chain enforcement.",
+    images: ["/logo/social-og-1200x630.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/logo/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/logo/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: [{ url: "/logo/app-icon-512-dark.png", sizes: "512x512", type: "image/png" }],
+  },
+};
 
 export default function RootLayout({
   children,
@@ -39,47 +60,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${jetbrains.variable} ${syne.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-primary">
         <PrivyAuthProvider>
           <WalletProvider>
-            <Navbar />
-            {children}
-            <footer className="mt-auto">
-              <div className="divider" />
-              <div
-                className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
-                style={{ color: "var(--text-muted)" }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="gradient-text font-bold text-sm">AgentBond</span>
-                  <span style={{ color: "var(--border-active)" }}>·</span>
-                  <span>Solana Frontier Hackathon 2026</span>
-                </div>
-                <div className="flex items-center gap-4 font-mono">
-                  <a
-                    href={`https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-colors hover:text-accent"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {PROGRAM_ID.slice(0, 8)}…{PROGRAM_ID.slice(-4)}
-                  </a>
-                  <span style={{ color: "var(--border)" }}>|</span>
-                  <a
-                    href="https://github.com/DiveshK007/agentbond"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-colors hover:text-accent"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    GitHub ↗
-                  </a>
-                </div>
-              </div>
-            </footer>
+            <LayoutShell>{children}</LayoutShell>
           </WalletProvider>
         </PrivyAuthProvider>
       </body>
