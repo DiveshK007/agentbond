@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
-import APIStatusBanner from "./APIStatusBanner";
 
 const PROGRAM_ID = "5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3";
 
@@ -22,7 +21,6 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   return (
     <>
       <Navbar />
-      <APIStatusBanner />
       {children}
       <footer className="mt-auto">
         <div className="divider" />
