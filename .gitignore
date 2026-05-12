@@ -11,3 +11,13 @@ bots/.env
 api/.env
 skills-lock.json
 **/.DS_Store
+
+# Process tracking + logs
+.pids
+logs/
+
+# Local video artifacts (uploaded to YouTube — no need to commit)
+*.mp4
+*.mov
+*.m4a
+*.wav

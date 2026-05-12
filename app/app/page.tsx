@@ -604,7 +604,7 @@ export default function LandingPage() {
               <div className="sec-badge">Audit</div>
               <div className="stitle">Adevar Labs reviewing</div>
               <div className="sbody">Smart contract under active review by Adevar Labs. Audit report publishes pre-mainnet.</div>
-              <a href={`${REPO_URL}/blob/main/SUBMISSION.md#audit-status`} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">View audit scope ↗</a>
+              <a href={`${REPO_URL}/blob/main/docs/submission/overview.md#audit-status`} target="_blank" rel="noopener noreferrer" className="slink" data-cursor="hover">View audit scope ↗</a>
             </div>
             <div className="sec-card reveal d2">
               <div className="sec-badge">MIT</div>
@@ -679,7 +679,7 @@ export default function LandingPage() {
                 <Link href="/jobs" data-cursor="hover">Jobs</Link>
                 <Link href="/leaderboard" data-cursor="hover">Leaderboard</Link>
                 <Link href="/dashboard" data-cursor="hover">Dashboard</Link>
-                <a href={`${REPO_URL}/blob/main/SUBMISSION.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission brief</a>
+                <a href={`${REPO_URL}/blob/main/docs/submission/overview.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission brief</a>
               </div>
               <div className="foot-col">
                 <h4>Developers</h4>
@@ -692,9 +692,9 @@ export default function LandingPage() {
               <div className="foot-col">
                 <h4>Resources</h4>
                 <a href={`${REPO_URL}/blob/main/README.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">README</a>
-                <a href={`${REPO_URL}/blob/main/SUBMISSION.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission</a>
+                <a href={`${REPO_URL}/blob/main/docs/submission/overview.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Submission</a>
                 <a href={EXPLORER_URL} target="_blank" rel="noopener noreferrer" data-cursor="hover">Solana Explorer</a>
-                <a href={`${REPO_URL}/blob/main/SUBMISSION_TRACKER.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Side tracks</a>
+                <a href={`${REPO_URL}/blob/main/docs/submission/tracker.md`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Side tracks</a>
                 <a href={`${REPO_URL}/issues`} target="_blank" rel="noopener noreferrer" data-cursor="hover">Issues</a>
               </div>
             </div>

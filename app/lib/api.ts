@@ -14,7 +14,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
  * When the live API is unreachable (eg the Vercel deployment can't see localhost),
  * each fetch falls back to a realistic demo dataset so judges see a functioning
  * product instead of empty pages or error states. Tradeoff: live demo data is
- * static, but the protocol genuinely runs — see SUBMISSION.md for the Devnet
+ * static, but the protocol genuinely runs — see docs/submission/overview.md for the Devnet
  * program ID and verifiable Explorer transactions.
  */
 async function fetchWithFallback<T>(url: string, fallback: T, timeoutMs = 3500): Promise<T> {

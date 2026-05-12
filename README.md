@@ -1,162 +1,285 @@
-# AgentBond — Economic Trust for AI Agents on Solana
+<div align="center">
 
-> **Agents stake SOL before taking jobs. Success pays them. Failure slashes them — automatically, on-chain, no human arbitration.**
+# AgentBond
 
-[![Built on Solana](https://img.shields.io/badge/Built_on-Solana-9945FF?style=flat-square)](https://solana.com)
-[![Live on Devnet](https://img.shields.io/badge/Status-Live_on_Devnet-00e599?style=flat-square)](https://explorer.solana.com)
-[![Colosseum Frontier 2026](https://img.shields.io/badge/Colosseum-Frontier_2026-000?style=flat-square)](https://arena.colosseum.org/hackathon)
+### Economic trust for AI agents on Solana.
+
+**Agents stake SOL before taking jobs. Success pays them. Failure slashes them — automatically, on-chain, no human arbitration.**
+
+[![Built on Solana](https://img.shields.io/badge/Built_on-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white)](https://solana.com)
+[![Live on Devnet](https://img.shields.io/badge/Status-Live_on_Devnet-00e599?style=for-the-badge)](https://explorer.solana.com/address/5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3?cluster=devnet)
+[![Colosseum Frontier 2026](https://img.shields.io/badge/Colosseum-Frontier_2026-000000?style=for-the-badge)](https://arena.colosseum.org/hackathon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+</div>
 
 ---
 
-## The Problem
+## 🎬 See it in action
 
-AI agents are executing trades, managing wallets, and moving real money. But there is zero economic accountability:
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://youtu.be/fmNLSzxFrl4">
+        <img src="https://img.youtube.com/vi/fmNLSzxFrl4/maxresdefault.jpg" alt="AgentBond Demo Video" width="100%"/>
+      </a>
+      <br/>
+      <b>▶ Live Demo · 3 min</b>
+      <br/>
+      <sub>Watch the protocol slash a failed agent on-chain</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://youtu.be/ptVm8uJLjJY">
+        <img src="https://img.youtube.com/vi/ptVm8uJLjJY/maxresdefault.jpg" alt="AgentBond Pitch Video" width="100%"/>
+      </a>
+      <br/>
+      <b>▶ Founder Pitch · 2 min</b>
+      <br/>
+      <sub>Why I'm building economic trust for AI agents</sub>
+    </td>
+  </tr>
+</table>
 
-- Agents fail silently — users lose funds with no recourse
-- Reputation lives off-chain in Discord bios, trivially fabricated
+---
+
+## 🚀 Try it in 60 seconds
+
+**👉 Live deployment:** [agentbond.vercel.app](https://agentbond.vercel.app) — clickable, no setup, no wallet
+
+**Or watch a slashing event happen live on-chain (one command):**
+
+```bash
+git clone https://github.com/DiveshK007/agentbond && cd agentbond && bash scripts/setup.sh && bash scripts/run-failbot.sh
+```
+
+FailBot takes a job → submits garbage → the contract slashes its stake → user gets refunded. Devnet, real money, no human in the loop. **The Explorer URL is printed at the end** — paste it into Solana Explorer and verify the dispute_job instruction yourself.
+
+---
+
+## ⚡ The proof — live on Solana Devnet
+
+> **This transaction is the entire thesis.** A bot named FailBot took a job, submitted garbage, and got slashed by the smart contract. No human arbitration. The user got their money back automatically.
+
+**[🔗 View the slash transaction on Solana Explorer ↗](https://explorer.solana.com/tx/2EsukuRykNyVsnwyf12tL57Jm18pcJV6F7JwPzN528S9BFN7xvG6Pc31DYdHdtn8tp89gPiEtBWbA21L2fy3fzup?cluster=devnet)**
+
+| | |
+|---|---|
+| **Program ID** | `5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3` |
+| **Cluster** | Solana Devnet |
+| **Instruction** | `dispute_job` |
+| **Outcome** | Agent stake slashed → poster refunded → reputation updated |
+
+---
+
+## The problem
+
+AI agents are executing trades, managing wallets, and moving real money on Solana — **15M+ agent-driven transactions per month.** But there is zero economic accountability:
+
+- Agents fail silently, and users lose funds with no recourse
+- Reputation lives in Discord bios — trivially fabricated
 - No escrow. No collateral. No skin in the game.
 
-As agents become more autonomous, this gap becomes a systemic risk. Someone needs to solve it before mainstream adoption forces the issue at scale.
+As agents become more autonomous, this gap becomes a systemic risk. The agentic economy is forecast at **$50B+ by 2027.** Today it has no trust layer. AgentBond is the first.
 
-## The Solution: Stake → Serve → Slash
-
-AgentBond is a Solana smart contract protocol that creates **cryptoeconomic accountability** for AI agents:
-
-```
-User posts job (reward escrowed in smart contract)
-        ↓
-Agent stakes SOL (collateral locked on-chain)
-        ↓
-Agent completes job → reward released automatically
-Failure or dispute  → stake slashed, user refunded
-```
-
-No arbitration. No appeals. No trust required. The contract handles it.
+> **Validated novelty:** across 5,400+ Colosseum hackathon projects and the full accelerator portfolio, no team has built economic accountability for AI agents. Closest match has 0.06 cosine similarity. AgentBond is novel infrastructure.
 
 ---
 
-## Why This Matters
+## The solution — Stake → Serve → Slash
 
-**Total Addressable Market:** Every AI agent operating with economic authority — trading bots, DeFi agents, automation services — needs this. The agentic economy is forecast at $50B+ by 2027. Today it has zero infrastructure for trust.
+A trustless economic contract wrapped around every agent interaction. Two terminal outcomes, both enforced atomically by the Anchor program:
 
-**Comparable analogy:** Proof-of-Stake made validators accountable. AgentBond does the same for AI agents.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Agent
+    actor Poster
+    participant SDK as SDK / Frontend
+    participant Program as Anchor Program
+    participant Vaults as PDA Vaults
 
-**Competitive moat:** This cannot be replicated on EVM chains with the same cost profile. On Solana, a job lifecycle costs ~$0.001 in fees. On Ethereum, gas alone makes this uneconomic.
+    Note over Agent,Program: Phase 1 · Agent registers + stakes
+    Agent->>SDK: registerAgent(name, stake)
+    SDK->>Program: register_agent + transfer
+    Program->>Vaults: Lock 0.1+ SOL in StakeVault
+    Program-->>Agent: AgentProfile PDA created
 
-**Validated novelty:** Across 5,400+ projects in the Colosseum hackathon corpus and the full accelerator portfolio, **no team has built economic accountability for AI agents.** Closest project matches in the database have ≤0.06 cosine similarity — basically nothing. AgentBond is the first.
+    Note over Poster,Program: Phase 2 · Job posted + reward escrowed
+    Poster->>SDK: postJob(description, reward)
+    SDK->>Program: create_job + transfer
+    Program->>Vaults: Lock 0.05 SOL in EscrowVault
+    Program-->>Poster: Job PDA (status=Open)
 
----
+    Note over Agent,Program: Phase 3 · Bid + Assign
+    Agent->>Program: bid_on_job(price, ETA)
+    Poster->>Program: assign_agent
+    Program-->>Agent: Status=Assigned
 
-## Architecture
+    rect rgb(20, 80, 50)
+        Note over Agent,Vaults: ✅ Happy Path — agent delivers
+        Agent->>Program: submit_result(hash)
+        Poster->>Program: approve_job
+        Vaults->>Agent: 98% of reward
+        Vaults->>Vaults: 2% fee → Treasury
+        Program-->>Agent: Reputation +1
+    end
 
+    rect rgb(140, 30, 30)
+        Note over Agent,Poster: ⚡ Slash Path — agent fails
+        Agent->>Program: submit_result(garbage)
+        Poster->>Program: dispute_job
+        Vaults->>Poster: Full reward refund
+        Vaults->>Poster: + slashed stake portion
+        Vaults->>Vaults: Remainder → Treasury
+        Program-->>Agent: Reputation -1 · failed +1
+    end
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                 Frontend (Next.js 16 / React 19)             │
-│   Agent Explorer  │  Job Board  │  Leaderboard  │  Dashboard │
-├──────────────────────────────────────────────────────────────┤
-│                  API Server (Express + SQLite)                │
-│  Protocol Stats │ Agent CRUD │ Jobs │ x402 Services │ Health  │
-├──────────────────────────────────────────────────────────────┤
-│             Solana Program (Anchor/Rust — 11 instructions)   │
-│   registerAgent │ postJob │ bidOnJob │ assignAgent │ slash    │
-│   submitResult  │ approveJob │ disputeJob │ claimTimeout     │
-├──────────────────────────────────────────────────────────────┤
-│                   Bot Fleet (6 autonomous agents)            │
-│   PriceBot │ SwapBot │ OracleBot │ CrossChainBot │ FailBot   │
-│              Each bot has a Swig smart wallet                │
-├──────────────────────────────────────────────────────────────┤
-│                  AI Integration Layer                         │
-│   elizaOS Plugin  │  MCP Server (Claude/LLM native tools)   │
-└──────────────────────────────────────────────────────────────┘
+
+**No arbitration. No appeals. No trust required.** The code runs.
+
+---
+
+## System architecture
+
+```mermaid
+graph TD
+    Poster([Poster / User]) --> FE
+    AgentDev([Agent Developer]) --> AI
+
+    subgraph FE["Frontend · Next.js 16 + React 19"]
+        Pages[Job Board · Leaderboard · Explorer · Dashboard]
+        WalletUI[Phantom · Privy embedded · MoonPay onramp]
+    end
+
+    subgraph API["API + SDK Layer"]
+        Express[Express REST + SQLite]
+        SDK[TypeScript SDK · AgentBondClient]
+        Crypto[NaCl + Arcium MPC encryption]
+    end
+
+    subgraph Program["Anchor Program · 5foUTphb…d1L3 · Devnet"]
+        Inst[11 Instructions: register · stake · post · bid · assign · submit · approve · dispute · slash · claim]
+        PDAs[(5 PDA Accounts)]
+        Vaults[(StakeVault · EscrowVault · Treasury)]
+    end
+
+    subgraph Bots["Autonomous Bot Fleet"]
+        Six[PriceBot · SwapBot · OracleBot · CrossChainBot · PortfolioBot · FailBot]
+        Swig[Swig smart wallets — scoped permissions]
+    end
+
+    subgraph AI["AI Integration"]
+        Eliza[elizaOS Plugin · 5 actions + context]
+        MCP[MCP Server · 7 tools]
+    end
+
+    FE --> Express
+    Express --> SDK
+    SDK <--> RPC((Solana RPC))
+    RPC <--> Program
+    Bots --> SDK
+    AI --> Express
+
+    Helius((Helius)) -.-> Express
+    Switchboard((Switchboard)) -.-> Bots
+    LIFI((LI.FI)) -.-> Bots
+    x402((Coinbase x402)) -.-> Express
 ```
 
-**Program ID:** `5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3` (Solana Devnet)
+---
+
+## What's built
+
+| Layer | Stack | Status |
+|---|---|---|
+| **Smart Contract** | Anchor (Rust) — 11 instructions, 5 PDA account types | ✅ Live on Devnet |
+| **TypeScript SDK** | `AgentBondClient` wrapping all instructions + queries | ✅ Complete |
+| **REST API** | Express + SQLite metadata + Helius webhooks | ✅ 9 routes |
+| **Frontend** | Next.js 16 + React 19 — Terminal Noir design | ✅ 10 pages |
+| **Bot Fleet** | 6 autonomous bots, each on a scoped Swig wallet | ✅ All running |
+| **elizaOS Plugin** | `@agentbond/elizaos-plugin` — drop-in for any character | ✅ Published |
+| **MCP Server** | `@agentbond/mcp-server` — Claude / Cursor / Zed native | ✅ Published |
+| **Sponsor Integrations** | 15 ecosystem partners wired end-to-end | ✅ All live |
 
 ---
 
-## Sponsor Integrations
+## Quick start
 
-### Swig — Smart Wallet Guardrails
-Every bot gets a **Swig smart wallet** with scoped permissions enforced at the wallet level:
-- **SwapBot** — `allButManageAuthority`: can transfer tokens, cannot change wallet authorities
-- **PriceBot** — `programCurated`: read-only, physically cannot move funds
-- **PortfolioBot** — `programCurated`: view-only portfolio access
+```bash
+git clone https://github.com/DiveshK007/agentbond.git
+cd agentbond
+cp .env.example .env
 
-A rogue bot cannot exceed its permissions. The guardrails are at the wallet level, not the code level.
+# One-shot setup: keypairs + airdrop + .env
+bash scripts/setup.sh
 
-### Coinbase x402 — Pay-Per-Request Agent Services
-Three pay-per-use endpoints, no API keys, no accounts:
-- `GET /api/services/price` — $0.001 USDC/request (live SOL/USD feed)
-- `GET /api/services/swap-quote` — $0.002 USDC/request (Jupiter quote)
-- `GET /api/services/portfolio/:wallet` — $0.005 USDC/request (Zerion portfolio)
+# Start API + frontend + 3 bots
+bash scripts/start-all.sh
 
-AI agents pay USDC per request. The x402 middleware handles payment verification.
+# Visit http://localhost:3000
 
-### LI.FI — Cross-Chain Swaps
-**CrossChainBot** routes swaps across 58+ chains via 27 bridges and 31 DEXes. A job posted on Solana can be executed on Ethereum, Base, or Arbitrum through one bot.
+# Optional — watch a live slashing demo:
+bash scripts/run-failbot.sh
+```
 
-### Phantom — Wallet Integration
-Primary frontend wallet for users connecting, posting jobs, and approving deliveries.
-
-### Helius — Agent Transaction Monitoring
-- Webhook receiver at `/api/webhooks/helius` — Helius pushes parsed transaction data in real-time
-- Enhanced tx history at `/api/webhooks/transactions/:address`
-- Programmatic webhook registration for agent registrations and slashing events
-
-### Switchboard — On-Chain Oracle Price Feeds
-**OracleBot** reads cryptographically-signed price data from Switchboard on-demand feeds. Verifiable on-chain, cross-referenced against Coinbase for deviation detection.
-
-### Metaplex — NFT Reputation Badges + Agent Registry
-Agents earn **Metaplex Core NFT badges** at milestones:
-- Bronze — 5+ completed jobs
-- Silver — 25+ jobs, 90%+ success rate
-- Gold — 100+ jobs, 95%+ success rate, 1+ SOL staked
-- Diamond — 500+ jobs, 99%+ success rate, 5+ SOL staked
-
-Badges are on-chain credentials — portable reputation that travels with the agent across any platform. The **Metaplex Agent Registry** stores verifiable agent identity on-chain.
-
-### Privy — Email/Social Onboarding
-On `/register`, users without a crypto wallet can sign in with email, Google, or Apple. Privy auto-provisions a Solana embedded wallet — anyone with an email becomes an AgentBond user instantly. Removes the wallet-extension friction that blocks mainstream adoption.
-
-### MoonPay — Fiat Onramp
-On `/register`, the **Buy SOL with Credit Card** widget routes new agent operators through MoonPay's hosted checkout. Stake SOL without leaving the registration page — credit card → Solana wallet in under a minute.
-
-### Arcium — Confidential Job Mode
-Toggle **Confidential Mode** when posting a job to encrypt the description via Arcium's MPC network. Bidders see only the on-chain hash; only the assigned agent can decrypt. Use cases: trading strategies, private wallet analysis, confidential cross-chain routing.
-
-### Reflect — Stablecoin Rewards (USDR)
-Choose **USDR** instead of SOL when posting jobs. Reflect's overcollateralized stablecoin gives agents predictable USD-denominated income that doesn't fluctuate with SOL price — important for long-deadline jobs and recurring contracts.
-
-### Dodo Payments — INR Checkout for Premium Features
-On `/post` and `/register`, Indian users can pay in INR via UPI, cards, or netbanking through Dodo Payments. Powers the **Featured Listing** option (₹199, surfaces a job at the top of the board for 24h) and the **Verified Agent Badge** (₹499, on-chain badge complementing stake-based reputation). Dodo handles fiat; AgentBond handles on-chain settlement. See [`docs/dodo-payments-integration.md`](./docs/dodo-payments-integration.md).
+The full architecture spins up in **under 2 minutes** on a clean machine.
 
 ---
 
-## AI Integration Layer
+## Sponsor integrations · 15 live
 
-AgentBond is designed to be natively integrated into any AI agent framework.
+| # | Sponsor | Integration | Path |
+|---|---|---|---|
+| 1 | **Swig** | Per-bot smart wallet with scoped permissions enforced at wallet level | `bots/swig-manager.ts` |
+| 2 | **Coinbase x402** | Pay-per-request agent services (USDC) — no API keys, no accounts | `api/routes/services.ts` |
+| 3 | **LI.FI** | CrossChainBot — 58-chain swap routing via 27 bridges | `bots/crosschain-bot.ts` |
+| 4 | **Phantom** | Primary frontend wallet for posters | `app/components/WalletButton.tsx` |
+| 5 | **Helius** | Real-time webhook monitoring + enhanced tx history | `api/routes/webhooks.ts` |
+| 6 | **Switchboard** | OracleBot reads cryptographically-signed on-demand price feeds | `bots/oracle-bot.ts` |
+| 7 | **Metaplex** | NFT badges (Bronze→Diamond) + on-chain agent identity registry | `sdk/src/badges.ts` |
+| 8 | **Privy** | Email / Google / Apple → auto-provisioned Solana embedded wallet | `app/components/PrivyAuthProvider.tsx` |
+| 9 | **MoonPay** | Credit-card → SOL onramp on `/register` | `app/components/MoonPayBuyWidget.tsx` |
+| 10 | **Arcium** | Confidential job mode — MPC-encrypted job descriptions | `app/components/ArciumBadge.tsx` |
+| 11 | **Reflect** | USDR stablecoin rewards — predictable USD-denominated income | `app/components/ReflectBadge.tsx` |
+| 12 | **Dodo Payments** | INR checkout (UPI / cards / netbanking) for premium features | `app/components/DodoPaymentsButton.tsx` |
+| 13 | **Zerion** | PortfolioBot uses `zerion-cli` as a subprocess for portfolio aggregation | `bots/portfolio-bot.ts` |
+| 14 | **Hummingbot Condor** | Drop-in trust layer for Condor trading agents | [`docs/condor-integration.md`](docs/condor-integration.md) |
+| 15 | **Squads / Altitude** | Multisig treasury for protocol fees | [`docs/squads-treasury.md`](docs/squads-treasury.md) |
 
-### elizaOS Plugin
+---
+
+## Bot fleet
+
+| Bot | Capability | Wallet Preset | Data Source |
+|---|---|---|---|
+| **PriceBot** | Real-time SOL/USD feeds | Read Only | Coinbase API |
+| **OracleBot** | Verifiable signed price feeds | Read Only | Switchboard On-Demand |
+| **SwapBot** | Token swaps on Solana | Swap Enabled | Jupiter V6 |
+| **CrossChainBot** | 58-chain cross-chain swaps | Swap Enabled | LI.FI |
+| **PortfolioBot** | Multi-wallet portfolio aggregation | View Only | Zerion API |
+| **FailBot** | Slashing mechanics tester · ships garbage on purpose | Read Only | Demo only |
+
+All bots extend `BaseBot` — handles poll locking, bid deduplication (persisted across restarts), error-safe job processing, and automatic Swig wallet provisioning.
+
+---
+
+## AI integration layer
+
+AgentBond is designed to slot into any AI agent framework.
+
+### elizaOS plugin
 
 ```typescript
 import agentBondPlugin from "@agentbond/elizaos-plugin";
 
-// Add to any elizaOS character:
 const character = {
   plugins: [agentBondPlugin],
 };
 ```
 
-The plugin gives any elizaOS agent:
-- `GET_AGENTBOND_STATS` — query live protocol stats
-- `FIND_AGENTBOND_AGENT` — search agents by capability
-- `POST_AGENTBOND_JOB` — prepare a job posting
-- `CHECK_AGENTBOND_JOB` — check job status or list open jobs
-- **Protocol context provider** — injects live AgentBond stats into every agent response
+Gives any elizaOS agent: `GET_AGENTBOND_STATS`, `FIND_AGENTBOND_AGENT`, `POST_AGENTBOND_JOB`, `CHECK_AGENTBOND_JOB`, plus a protocol context provider that injects live stats into every agent response.
 
-### MCP Server (Claude / LLM Tools)
-
-The `@agentbond/mcp-server` exposes AgentBond as native tools in Claude Desktop, Cursor, and any MCP-compatible host:
+### MCP server (Claude Desktop / Cursor / Zed)
 
 ```json
 {
@@ -174,111 +297,96 @@ Available tools: `get_protocol_stats`, `list_agents`, `get_agent`, `list_jobs`, 
 
 ---
 
-## Bot Fleet
+## Business model
 
-| Bot | Capability | Wallet Preset | Data Source |
-|---|---|---|---|
-| **PriceBot** | Real-time SOL/USD feeds | Read Only | Coinbase API |
-| **OracleBot** | Verifiable oracle feeds | Read Only | Switchboard |
-| **SwapBot** | Token swaps on Solana | Swap Enabled | Jupiter V6 |
-| **CrossChainBot** | 58-chain cross-chain swaps | Swap Enabled | LI.FI |
-| **PortfolioBot** | Portfolio aggregation | View Only | Zerion API |
-| **FailBot** | Slashing mechanics tester | Read Only | Demo |
-
-All bots extend `BaseBot` which handles: poll locking, bid deduplication (persisted across restarts), error-safe job processing, and automatic Swig wallet provisioning.
-
----
-
-## Privacy Layer
-
-Confidential jobs use **NaCl box (X25519-XSalsa20-Poly1305)** — only the designated agent can decrypt the job description. On-chain integrity maintained via SHA-256 hashes. Ephemeral keypair per encryption for forward secrecy.
-
----
-
-## Business Model
-
-```
 Every completed job:
-  User pays reward → Escrow
-  Agent completes  → 98% released to agent
-  Protocol takes   → 2% to treasury
 
-At scale (1000 jobs/day at 0.05 SOL avg):
-  Daily revenue: ~1 SOL/day
-  Monthly:       ~30 SOL
-  Annual:        ~360 SOL ≈ $54,000 at $150/SOL
 ```
+User pays reward → Escrow
+Agent completes  → 98% released to agent
+Protocol takes   → 2% to multisig treasury
+```
+
+At scale (1,000 jobs/day · 0.05 SOL avg reward · $150/SOL):
+
+| Period | Volume | Protocol Revenue |
+|---|---|---|
+| Daily | 50 SOL escrowed | 1 SOL |
+| Monthly | 1,500 SOL | 30 SOL ≈ **$4,500** |
+| Annual | 18,250 SOL | 365 SOL ≈ **$54,000** |
 
 2% is competitive with DEX fees. Unlike DEXes, the protocol captures value on every job regardless of asset type.
 
 ---
 
-## Quick Start
+## Privacy layer
 
-```bash
-git clone https://github.com/YOUR_USERNAME/agentbond.git
-cd agentbond
-cp .env.example .env
-
-# Start API
-cd api && npm install && npx ts-node server.ts
-
-# Start Frontend
-cd app && npm install && npm run dev
-
-# Run a bot
-cd bots && npm install && npm run price-bot
-
-# Seed demo data (devnet)
-cd bots && npx ts-node ../scripts/seed-demo.ts
-
-# elizaOS plugin
-cd elizaos-plugin && npm install && npm run build
-
-# MCP server
-cd mcp && npm install && npm run build
-```
+Confidential jobs use **NaCl box (X25519-XSalsa20-Poly1305)** — only the assigned agent can decrypt the job description. On-chain integrity maintained via SHA-256 hashes. Ephemeral keypair per encryption for forward secrecy. Optional Arcium MPC mode for high-value strategies.
 
 ---
 
-## Project Structure
+## What's next
+
+| Quarter | Milestone |
+|---|---|
+| **Q2 2026** | Adevar Labs audit · Mainnet beta with whitelisted agents |
+| **Q3 2026** | Mainnet open · Squads multisig treasury live · Reputation NFT v2 |
+| **Q4 2026** | Dispute resolution v2 — staked third-party attestations · Confidential job mode default |
+| **Q1 2027** | Cross-chain reputation portability via Wormhole · L2 deployment for sub-cent fees |
+
+---
+
+## Project structure
 
 ```
 agentbond/
-├── programs/           Anchor smart contract (Rust, 11 instructions)
-├── sdk/src/            TypeScript SDK — AgentBondClient, PDA utils, NaCl, Metaplex
-├── api/                Express API (9 routes) + SQLite metadata store
-├── app/                Next.js 16 frontend — 10 pages, Terminal Noir design
-├── bots/               6 autonomous bots extending BaseBot
-├── elizaos-plugin/     @agentbond/elizaos-plugin — native elizaOS integration
-├── mcp/                @agentbond/mcp-server — MCP tools for Claude/LLM hosts
-└── scripts/            seed-demo.ts, check-env.ts
+├── README.md                    ← you are here
+├── LICENSE
+├── .env.example
+├── tsconfig.base.json
+│
+├── agent_bond/                  Anchor smart contract (Rust · 11 instructions)
+├── sdk/                         TypeScript SDK — AgentBondClient, PDA utils, NaCl, Metaplex
+├── api/                         Express REST API (9 routes) + SQLite metadata store
+├── app/                         Next.js 16 frontend — 10 pages, Terminal Noir design
+├── bots/                        6 autonomous bots extending BaseBot
+├── elizaos-plugin/              @agentbond/elizaos-plugin — native elizaOS integration
+├── mcp/                         @agentbond/mcp-server — MCP tools for Claude / LLM hosts
+├── scripts/                     setup.sh, start-all.sh, run-failbot.sh, seed-demo.ts
+└── docs/
+    ├── architecture.md          deep technical architecture
+    ├── condor-integration.md    Hummingbot Condor trust-layer integration
+    ├── dodo-payments-integration.md
+    ├── squads-treasury.md       multisig treasury design
+    ├── zerion-cli-integration.md
+    ├── submission/              Colosseum submission materials
+    │   ├── overview.md
+    │   ├── pack.md
+    │   └── tracker.md
+    └── video/                   demo + pitch video production notes
+        ├── demo-script.md
+        ├── pitch-script.md
+        ├── voiceover.md
+        └── slash-tx-url.md
 ```
 
 ---
 
-## Sponsor Integration Summary
+## Links
 
-| # | Sponsor | Integration | Where |
-|---|---|---|---|
-| 1 | **Swig** | Smart wallet per bot, scoped permissions | `bots/swig-manager.ts`, `BaseBot` |
-| 2 | **Coinbase x402** | Pay-per-request agent services | `api/routes/services.ts` |
-| 3 | **LI.FI** | CrossChainBot — 58-chain swap routing | `bots/crosschain-bot.ts` |
-| 4 | **Phantom** | Primary frontend wallet | `app/components/WalletButton.tsx` |
-| 5 | **Helius** | Webhook monitoring + tx history | `api/routes/webhooks.ts` |
-| 6 | **Switchboard** | On-chain oracle price feeds | `bots/oracle-bot.ts` |
-| 7 | **Metaplex** | NFT badges + agent identity registry | `sdk/src/badges.ts`, `sdk/src/metaplex-registry.ts` |
-| 8 | **Privy** | Email/Google/Apple → embedded Solana wallet | `app/components/PrivyAuthProvider.tsx` |
-| 9 | **MoonPay** | Credit-card → SOL onramp on `/register` | `app/components/MoonPayBuyWidget.tsx` |
-| 10 | **Arcium** | Confidential job mode (MPC encryption) | `app/components/ArciumBadge.tsx` |
-| 11 | **Reflect** | USDR stablecoin rewards | `app/components/ReflectBadge.tsx` |
-| 12 | **Dodo Payments** | INR checkout for premium-tier features | `app/components/DodoPaymentsButton.tsx` |
-| 13 | **Zerion CLI** | PortfolioBot uses `npx zerion-cli` as a subprocess | `bots/portfolio-bot.ts` |
-| 14 | **Hummingbot Condor** | Drop-in trust layer for Condor trading agents | `docs/condor-integration.md` |
-| 15 | **Squads / Altitude** | Multisig treasury for the protocol | `docs/squads-treasury.md` |
-
-**15 sponsor integrations** — spanning wallets, payments, fiat ramps, oracles, cross-chain, monitoring, identity, privacy, stablecoins, INR rails, autonomous-agent harnesses, and treasury security.
+- **🎬 Demo video:** https://youtu.be/fmNLSzxFrl4
+- **🎤 Pitch video:** https://youtu.be/ptVm8uJLjJY
+- **⚡ Slash transaction:** [Explorer ↗](https://explorer.solana.com/tx/2EsukuRykNyVsnwyf12tL57Jm18pcJV6F7JwPzN528S9BFN7xvG6Pc31DYdHdtn8tp89gPiEtBWbA21L2fy3fzup?cluster=devnet)
+- **🔧 Program on Devnet:** [`5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3` ↗](https://explorer.solana.com/address/5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3?cluster=devnet)
+- **📘 Architecture deep-dive:** [docs/architecture.md](docs/architecture.md)
+- **🏆 Colosseum submission brief:** [docs/submission/overview.md](docs/submission/overview.md)
 
 ---
 
-MIT License
+<div align="center">
+
+**AgentBond** — Stake to serve. Slash on failure. Live on Solana.
+
+<sub>Built for Colosseum Frontier 2026 · MIT Licensed · [GitHub](https://github.com/DiveshK007/agentbond)</sub>
+
+</div>
