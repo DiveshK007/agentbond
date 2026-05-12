@@ -43,4 +43,4 @@ jobs:
             echo "::error::POSTER_KEYPAIR_JSON secret is not set. Add it in Settings → Secrets → Actions."
             exit 1
           fi
-          npx ts-node --transpile-only scripts/keep-alive.ts
+          npx ts-node --project scripts/tsconfig.json --transpile-only scripts/keep-alive.ts
