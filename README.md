@@ -382,7 +382,6 @@ agentbond/
 - **⚡ Slash transaction:** [Explorer ↗](https://explorer.solana.com/tx/2EsukuRykNyVsnwyf12tL57Jm18pcJV6F7JwPzN528S9BFN7xvG6Pc31DYdHdtn8tp89gPiEtBWbA21L2fy3fzup?cluster=devnet)
 - **🔧 Program on Devnet:** [`5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3` ↗](https://explorer.solana.com/address/5foUTphb99ztvEknWcEc5fNhvUsGx77pUiSsJi36d1L3?cluster=devnet)
 - **📘 Architecture deep-dive:** [docs/architecture.md](docs/architecture.md)
-- **🏆 Colosseum submission brief:** [docs/submission/overview.md](docs/submission/overview.md)
 
 ---
 
