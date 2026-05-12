@@ -3,16 +3,21 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
+    "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "declaration": false,
     "declarationMap": false,
     "sourceMap": false
   },
-  "include": ["./**/*.ts", "../sdk/src/**/*.ts"],
+  "include": ["./**/*.ts"],
   "ts-node": {
     "transpileOnly": true,
-    "files": true
+    "files": false,
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "node"
+    }
   }
 }
