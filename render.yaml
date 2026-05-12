@@ -1,0 +1,33 @@
+# Render Blueprint — deploys the AgentBond Express API on Render's free tier.
+#
+# To deploy:
+#   1. Sign in at https://render.com with your GitHub account
+#   2. Click "New +" → "Blueprint"
+#   3. Connect this repo (DiveshK007/agentbond) and select branch "main"
+#   4. Render auto-detects this file and provisions the service
+#   5. After build, copy the *.onrender.com URL
+#   6. Add NEXT_PUBLIC_API_URL=<that URL> to Vercel env vars
+#
+# Free-tier note: the service spins down after 15 min of no traffic
+# (cold start ~30s). The keep-warm GitHub Action pings /health every
+# 14 minutes to prevent that.
+
+services:
+  - type: web
+    name: agentbond-api
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    buildCommand: cd sdk && npm install --no-audit --no-fund --legacy-peer-deps && cd ../api && npm install --no-audit --no-fund --legacy-peer-deps
+    startCommand: cd api && npx ts-node --transpile-only server.ts
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: RPC_URL
+        value: https://api.devnet.solana.com
+      - key: ALLOWED_ORIGINS
+        value: https://agentbond.vercel.app

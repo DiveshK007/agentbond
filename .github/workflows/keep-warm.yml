@@ -1,0 +1,49 @@
+name: Keep Render API Warm
+
+# Render's free tier spins down after 15 min of no traffic (cold-start ~30s).
+# This workflow pings /health every 14 minutes to keep the API hot for judges.
+#
+# Setup:
+#   1. Deploy the API on Render (see render.yaml)
+#   2. Add a repository variable: Settings → Secrets and variables →
+#      Actions → Variables tab → "RENDER_API_URL" = your *.onrender.com URL
+#   3. This workflow then runs automatically every 14 minutes.
+#
+# If RENDER_API_URL isn't set, the workflow no-ops with a friendly message.
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"   # every 14 minutes (just under Render's 15 min idle)
+  workflow_dispatch:
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Render API /health
+        env:
+          API_URL: ${{ vars.RENDER_API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::notice::RENDER_API_URL variable not set yet — skipping ping. Add it under Settings → Secrets and variables → Actions → Variables."
+            exit 0
+          fi
+          echo "Pinging $API_URL/health …"
+          # First request after spin-down may take 30s; allow up to 90s
+          for i in 1 2 3; do
+            code=$(curl -sS -o /tmp/resp -w "%{http_code}" --max-time 90 "$API_URL/health" || echo "000")
+            echo "Attempt $i → HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "✓ API awake"
+              cat /tmp/resp
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::API failed to respond after 3 attempts. Check Render dashboard for service status."
+          exit 1
