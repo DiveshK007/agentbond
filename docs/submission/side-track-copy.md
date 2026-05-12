@@ -64,6 +64,17 @@ A production-grade Solana program with explicit invariants on every state transi
 >
 > Program: `agent_bond/programs/agent_bond/src/`. 11 instructions, 5 account types, full IDL exported. MIT licensed. Open for review.
 >
+> **Why AgentBond is worth your audit time:** this protocol will reach mainnet in Q3 2026 with real user-deposited SOL flowing through StakeVault and EscrowVault. The audit findings will not sit in a PDF — they will gate the mainnet deployment. Adevar's review will be cited in the README, linked on the live site, and form the basis of our mainnet announcement. Every future user of AgentBond will rely on this audit.
+>
+> **Recommended audit scope (priority order):**
+> 1. **Slashing path:** `dispute_job` → `slash` instruction chain. The most security-critical flow — any flaw enables theft of agent stake.
+> 2. **Escrow release:** `approve_job` instruction — must atomically pay agent + treasury or revert. Re-entry resistance.
+> 3. **PDA seed determinism:** all 5 account types (`ProtocolConfig`, `AgentProfile`, `ServiceListing`, `Job`, `Bid`) — verify no collision possible.
+> 4. **State machine invariants:** Job status transitions (Open → Assigned → Submitted → Approved/Disputed) — no out-of-order calls.
+> 5. **Authority constraints:** `update_stake`, `claim_timeout` — verify only the intended caller can invoke each.
+>
+> Out of scope for the hackathon audit: frontend, off-chain bot logic, sponsor integrations. Just the 11 Anchor instructions in `agent_bond/programs/agent_bond/src/`.
+>
 > See [`docs/architecture.md`](../architecture.md) for the full security model and the [README's audit section](../../README.md#whats-built).
 
 ---
