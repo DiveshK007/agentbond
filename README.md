@@ -11,6 +11,9 @@
 [![Colosseum Frontier 2026](https://img.shields.io/badge/Colosseum-Frontier_2026-000000?style=for-the-badge)](https://arena.colosseum.org/hackathon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
+[![CI](https://github.com/DiveshK007/agentbond/actions/workflows/ci.yml/badge.svg)](https://github.com/DiveshK007/agentbond/actions/workflows/ci.yml)
+[![Keep Devnet Alive](https://github.com/DiveshK007/agentbond/actions/workflows/keep-alive.yml/badge.svg)](https://github.com/DiveshK007/agentbond/actions/workflows/keep-alive.yml)
+
 </div>
 
 ---

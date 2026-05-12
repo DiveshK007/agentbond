@@ -1,0 +1,27 @@
+# Railway only needs to build the API. Skip everything else.
+app/
+bots/
+elizaos-plugin/
+mcp/
+agent_bond/
+logs/
+docs/
+.next/
+target/
+node_modules/
+
+# Local artifacts
+*.mp4
+*.mov
+*.m4a
+*.wav
+.pids
+.env
+.env.local
+
+# Dev junk
+.DS_Store
+.vscode/
+.idea/
+.claude/
+.agents/

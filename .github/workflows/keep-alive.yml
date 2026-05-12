@@ -1,0 +1,46 @@
+name: Keep Devnet Alive
+
+# Posts a small job to the AgentBond protocol every 2 hours so the
+# leaderboard and /jobs page stay populated for judges visiting at any time.
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"  # every 2 hours
+  workflow_dispatch:        # also runnable on-demand
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  post-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install SDK deps (sibling import target)
+        working-directory: sdk
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Install root deps for ts-node script
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm install --no-audit --no-fund --legacy-peer-deps \
+            ts-node typescript \
+            @solana/web3.js @coral-xyz/anchor dotenv
+
+      - name: Post a keep-alive job to AgentBond devnet
+        env:
+          POSTER_KEYPAIR_JSON: ${{ secrets.POSTER_KEYPAIR_JSON }}
+          RPC_URL: https://api.devnet.solana.com
+        run: |
+          if [ -z "$POSTER_KEYPAIR_JSON" ]; then
+            echo "::error::POSTER_KEYPAIR_JSON secret is not set. Add it in Settings → Secrets → Actions."
+            exit 1
+          fi
+          npx ts-node --transpile-only scripts/keep-alive.ts
