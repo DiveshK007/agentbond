@@ -27,11 +27,11 @@ jobs:
         working-directory: sdk
         run: npm install --no-audit --no-fund --legacy-peer-deps
 
-      - name: Install root deps for ts-node script
+      - name: Install runtime deps (tsx ignores tsconfig issues that fight ts-node)
         run: |
           npm init -y >/dev/null 2>&1 || true
           npm install --no-audit --no-fund --legacy-peer-deps \
-            ts-node typescript \
+            tsx \
             @solana/web3.js @coral-xyz/anchor dotenv
 
       - name: Post a keep-alive job to AgentBond devnet
@@ -43,4 +43,4 @@ jobs:
             echo "::error::POSTER_KEYPAIR_JSON secret is not set. Add it in Settings → Secrets → Actions."
             exit 1
           fi
-          npx ts-node --project scripts/tsconfig.json --transpile-only scripts/keep-alive.ts
+          npx tsx scripts/keep-alive.ts
