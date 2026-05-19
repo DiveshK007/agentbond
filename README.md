@@ -47,7 +47,7 @@
 
 ## 🚀 Try it in 60 seconds
 
-**👉 Live deployment:** [agentbond.vercel.app](https://agentbond.vercel.app) — clickable, no setup, no wallet
+**👉 Live deployment:** [agentbond-three.vercel.app](https://agentbond-three.vercel.app) — clickable, no setup, no wallet
 
 **Or watch a slashing event happen live on-chain (one command):**
 

@@ -30,4 +30,4 @@ services:
       - key: RPC_URL
         value: https://api.devnet.solana.com
       - key: ALLOWED_ORIGINS
-        value: https://agentbond.vercel.app
+        value: https://agentbond-three.vercel.app,https://agentbond.vercel.app
