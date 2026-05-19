@@ -437,8 +437,13 @@ body.land-menu-open .menu-overlay { opacity: 1; pointer-events: auto; }
   position: absolute; top: 12px; right: 12px; padding: 6px 12px;
   border: 1px solid var(--land-border); border-radius: 6px;
   font-family: "JetBrains Mono"; font-size: 11px; color: var(--land-text-2); background: transparent;
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .15s ease;
 }
-.landing-root .copy-btn.copied { color: var(--land-accent); border-color: var(--land-accent); }
+.landing-root .copy-btn:hover { border-color: var(--land-border-active); color: var(--land-text); }
+.landing-root .copy-btn.copied {
+  color: var(--land-bg); background: var(--land-accent); border-color: var(--land-accent);
+  transform: scale(1.06);
+}
 
 /* Final CTA */
 .landing-root .final { position: relative; text-align: center; padding: 160px 32px; max-width: 900px; margin: 0 auto; }

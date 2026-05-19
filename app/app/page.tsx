@@ -656,8 +656,8 @@ export default function LandingPage() {
           <div className="program-id">
             <span style={{ color: "var(--land-text-2)" }}>Program ID</span>
             <span style={{ color: "var(--land-text)" }}>{PROGRAM_ID}</span>
-            <button onClick={copyPid} style={{ color: "var(--land-text-3)" }} data-cursor="hover" title="Copy Program ID" aria-label="Copy Program ID">
-              {pidCopied ? "✓" : "⎘"}
+            <button onClick={copyPid} className={pidCopied ? "pid-copied" : ""} style={pidCopied ? { color: "var(--land-accent)", transition: "color .2s ease" } : { color: "var(--land-text-3)", transition: "color .2s ease" }} data-cursor="hover" title="Copy Program ID" aria-label="Copy Program ID">
+              {pidCopied ? "Copied ✓" : "⎘ Copy"}
             </button>
           </div>
         </section>

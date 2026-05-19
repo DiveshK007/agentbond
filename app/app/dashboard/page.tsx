@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { Agent, SerializedJob } from "@/lib/types";
+import { fetchAgent as apiFetchAgent, fetchJobs as apiFetchJobs } from "@/lib/api";
 import {
   agentDisplayName,
   completionRate,
@@ -12,8 +13,6 @@ import {
   reputationDisplay,
 } from "@/lib/format";
 import JobCard from "../components/JobCard";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 type AgentState = Agent | false | null;
 
@@ -33,16 +32,20 @@ export default function DashboardPage() {
     setJobs([]);
 
     try {
-      const [agentRes, jobsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/agents/${pubkey}`),
-        fetch(`${API_BASE}/api/jobs`),
+      const [agentData, jobsData] = await Promise.all([
+        apiFetchAgent(pubkey),
+        apiFetchJobs(),
       ]);
 
-      setAgent(agentRes.ok ? ((await agentRes.json()) as Agent) : false);
-      setJobs(jobsRes.ok ? ((await jobsRes.json()) as SerializedJob[]) : []);
+      // fetchAgent always returns data (falls back to demo) —
+      // check if the returned agent actually matches the queried pubkey
+      const isMatch =
+        agentData.pubkey === pubkey || agentData.owner === pubkey;
+      setAgent(isMatch ? agentData : false);
+      setJobs(jobsData);
       setWalletPubkey(pubkey);
     } catch {
-      setError("Could not reach API — make sure the server is running on port 3001.");
+      setError("Could not load agent data. Please try again.");
     } finally {
       setLoading(false);
     }
