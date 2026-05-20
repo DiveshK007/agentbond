@@ -12,6 +12,7 @@ import {
   truncatePubkey,
 } from "@/lib/format";
 import StatusBadge from "../../components/StatusBadge";
+import MetadataLookup from "../../components/MetadataLookup";
 
 export const dynamic = "force-dynamic";
 
@@ -134,7 +135,7 @@ export default async function JobDetailPage({
   const isExpired = job.deadline < Math.floor(Date.now() / 1000);
   const agentShort = isDefaultPubkey(job.agent) ? "Unassigned" : truncatePubkey(job.agent);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-12">
@@ -245,32 +246,22 @@ export default async function JobDetailPage({
       <div className="glass rounded-xl p-6 mb-5">
         <h2 className="text-primary font-semibold text-sm mb-1">Hashes</h2>
         <DetailRow label="Description">
-          <span className="flex items-center gap-2">
-            <span className="font-mono text-xs break-all">{job.descriptionHash}</span>
-            <a
-              href={`${API_BASE}/api/metadata/job/${job.descriptionHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 text-info hover:text-primary text-xs underline underline-offset-2 transition-colors"
-            >
-              lookup ↗
-            </a>
+          <span className="flex flex-col items-end gap-1">
+            <span className="flex items-center gap-2">
+              <span className="font-mono text-xs break-all">{job.descriptionHash}</span>
+              <MetadataLookup hash={job.descriptionHash} type="job" />
+            </span>
           </span>
         </DetailRow>
         <DetailRow label="Result">
           {isEmptyHash(job.resultHash) ? (
             <span className="text-muted italic">Not submitted</span>
           ) : (
-            <span className="flex items-center gap-2">
-              <span className="font-mono text-xs break-all">{job.resultHash}</span>
-              <a
-                href={`${API_BASE}/api/metadata/result/${job.resultHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 text-info hover:text-primary text-xs underline underline-offset-2 transition-colors"
-              >
-                lookup ↗
-              </a>
+            <span className="flex flex-col items-end gap-1">
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-xs break-all">{job.resultHash}</span>
+                <MetadataLookup hash={job.resultHash} type="result" />
+              </span>
             </span>
           )}
         </DetailRow>

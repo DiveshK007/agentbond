@@ -222,10 +222,33 @@ export abstract class BaseBot {
       const [jobPda] = findJob(job.jobIndex);
       const tx = await this.client.submitResult(jobPda, resultHash);
       this.log(`Job #${idx} submitted. tx=${tx} result=${resultJson}`);
+
+      // Store result metadata off-chain so /api/metadata/result/:hash works
+      this.storeMetadata("result", { result: resultJson, jobIndex: job.jobIndex })
+        .catch((err) => this.log(`Metadata store (result) failed: ${String(err)}`));
     } catch (err) {
       this.log(`Job #${idx} failed: ${String(err)}`);
     } finally {
       this.processingJobs.delete(idx);
+    }
+  }
+
+  /**
+   * Fire-and-forget POST to the metadata API so hash lookups return data.
+   */
+  private async storeMetadata(
+    type: "job" | "result",
+    body: Record<string, unknown>
+  ): Promise<void> {
+    const apiBase = process.env["API_BASE_URL"] ?? "http://localhost:3001";
+    const url = `${apiBase}/api/metadata/${type}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      this.log(`Metadata POST ${type} returned ${res.status}`);
     }
   }
 
