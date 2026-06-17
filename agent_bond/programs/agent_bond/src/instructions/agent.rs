@@ -2,6 +2,10 @@ use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 use crate::state::{AgentProfile, ProtocolConfig, ServiceListing};
 use crate::errors::AgentBondError;
+use crate::events;
+
+// Minimum stake: 0.01 SOL
+const MIN_STAKE_LAMPORTS: u64 = 10_000_000;
 
 #[derive(Accounts)]
 pub struct RegisterAgent<'info> {
@@ -24,7 +28,8 @@ pub struct RegisterAgent<'info> {
     #[account(
         mut,
         seeds = [b"protocol"],
-        bump = protocol_config.bump
+        bump = protocol_config.bump,
+        constraint = !protocol_config.paused @ AgentBondError::ProtocolPaused,
     )]
     pub protocol_config: Account<'info, ProtocolConfig>,
 
@@ -40,7 +45,7 @@ pub fn register_agent(
     metadata_uri: String,
     stake_amount: u64,
 ) -> Result<()> {
-    require!(stake_amount > 0, AgentBondError::InvalidStakeAmount);
+    require!(stake_amount >= MIN_STAKE_LAMPORTS, AgentBondError::BelowMinimumStake);
 
     let mut name_bytes = [0u8; 32];
     let n = name.as_bytes().len().min(32);
@@ -79,12 +84,14 @@ pub fn register_agent(
         stake_amount,
     )?;
 
-    ctx.accounts.protocol_config.total_agents = ctx
-        .accounts
-        .protocol_config
-        .total_agents
-        .checked_add(1)
-        .unwrap();
+    ctx.accounts.protocol_config.total_agents = ctx.accounts.protocol_config.total_agents
+        .checked_add(1).ok_or(AgentBondError::Overflow)?;
+
+    emit!(events::AgentRegistered {
+        owner: ctx.accounts.owner.key(),
+        name: name_bytes,
+        stake: stake_amount,
+    });
 
     Ok(())
 }
@@ -120,6 +127,9 @@ pub fn update_stake(
 ) -> Result<()> {
     require!(ctx.accounts.agent_profile.status == 0, AgentBondError::AgentNotActive);
 
+    let mut deposited = 0u64;
+    let mut withdrawn = 0u64;
+
     if let Some(amount) = deposit {
         require!(amount > 0, AgentBondError::InvalidStakeAmount);
 
@@ -134,21 +144,15 @@ pub fn update_stake(
             amount,
         )?;
 
-        ctx.accounts.agent_profile.stake = ctx
-            .accounts
-            .agent_profile
-            .stake
-            .checked_add(amount)
-            .unwrap();
+        ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
+            .checked_add(amount).ok_or(AgentBondError::Overflow)?;
+        deposited = amount;
     }
 
     if let Some(amount) = withdraw {
         require!(amount > 0, AgentBondError::InvalidStakeAmount);
 
-        let unlocked = ctx
-            .accounts
-            .agent_profile
-            .stake
+        let unlocked = ctx.accounts.agent_profile.stake
             .checked_sub(ctx.accounts.agent_profile.locked_stake)
             .ok_or(AgentBondError::StakeLocked)?;
 
@@ -171,13 +175,17 @@ pub fn update_stake(
             amount,
         )?;
 
-        ctx.accounts.agent_profile.stake = ctx
-            .accounts
-            .agent_profile
-            .stake
-            .checked_sub(amount)
-            .unwrap();
+        ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
+            .checked_sub(amount).ok_or(AgentBondError::Overflow)?;
+        withdrawn = amount;
     }
+
+    emit!(events::StakeUpdated {
+        owner: ctx.accounts.owner.key(),
+        deposited,
+        withdrawn,
+        new_stake: ctx.accounts.agent_profile.stake,
+    });
 
     Ok(())
 }
@@ -227,6 +235,12 @@ pub fn list_service(
     listing.is_active = true;
     listing.total_calls = 0;
     listing.bump = ctx.bumps.service_listing;
+
+    emit!(events::ServiceListed {
+        agent: ctx.accounts.agent_profile.key(),
+        capability: cap_bytes,
+        price,
+    });
 
     Ok(())
 }

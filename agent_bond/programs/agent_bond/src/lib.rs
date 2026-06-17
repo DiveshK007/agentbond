@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 pub mod errors;
+pub mod events;
 pub mod instructions;
 pub mod reputation;
 pub mod state;
@@ -78,7 +79,29 @@ pub mod agent_bond {
         instructions::resolution::dispute_job(ctx)
     }
 
+    pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
+        instructions::resolution::resolve_dispute(ctx)
+    }
+
     pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
         instructions::resolution::claim_timeout(ctx)
+    }
+
+    // ── Admin instructions ───────────────────────────────────────────────
+
+    pub fn update_fee(ctx: Context<UpdateFee>, new_fee_bps: u16) -> Result<()> {
+        instructions::admin::update_fee(ctx, new_fee_bps)
+    }
+
+    pub fn pause_protocol(ctx: Context<PauseProtocol>, paused: bool) -> Result<()> {
+        instructions::admin::pause_protocol(ctx, paused)
+    }
+
+    pub fn withdraw_treasury(ctx: Context<WithdrawTreasury>, amount: u64) -> Result<()> {
+        instructions::admin::withdraw_treasury(ctx, amount)
+    }
+
+    pub fn transfer_admin(ctx: Context<TransferAdmin>, new_admin: Pubkey) -> Result<()> {
+        instructions::admin::transfer_admin(ctx, new_admin)
     }
 }

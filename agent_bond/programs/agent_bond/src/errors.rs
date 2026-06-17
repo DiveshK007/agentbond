@@ -34,4 +34,22 @@ pub enum AgentBondError {
     BidAlreadyExists,
     #[msg("Reward must be greater than zero")]
     InsufficientReward,
+
+    // ── new errors (v2) ──────────────────────────────────────────────
+    #[msg("Arithmetic overflow")]
+    Overflow,
+    #[msg("Protocol is paused")]
+    ProtocolPaused,
+    #[msg("Caller is not the protocol admin")]
+    NotAdmin,
+    #[msg("Dispute appeal period has not expired yet")]
+    AppealPeriodActive,
+    #[msg("Job is not in Disputed status")]
+    JobNotDisputed,
+    #[msg("Deadline seconds out of range (min 60, max 30 days)")]
+    DeadlineOutOfRange,
+    #[msg("Stake must meet the minimum threshold (0.01 SOL)")]
+    BelowMinimumStake,
+    #[msg("Fee basis points out of range (0-1000)")]
+    InvalidFeeBps,
 }

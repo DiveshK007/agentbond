@@ -1,12 +1,16 @@
 use anchor_lang::prelude::*;
 use crate::state::ProtocolConfig;
+use crate::events;
+
+// Default appeal period: 24 hours
+const DEFAULT_APPEAL_PERIOD: i64 = 24 * 60 * 60;
 
 #[derive(Accounts)]
 pub struct InitializeProtocol<'info> {
     #[account(
         init,
         payer = admin,
-        space = 67,
+        space = 76,  // 8 + 68 (added paused + appeal_period_seconds)
         seeds = [b"protocol"],
         bump
     )]
@@ -25,6 +29,14 @@ pub fn initialize_protocol(ctx: Context<InitializeProtocol>) -> Result<()> {
     config.total_jobs = 0;
     config.total_volume = 0;
     config.platform_fee_bps = 200;
+    config.paused = false;
+    config.appeal_period_seconds = DEFAULT_APPEAL_PERIOD;
     config.bump = ctx.bumps.protocol_config;
+
+    emit!(events::ProtocolInitialized {
+        admin: ctx.accounts.admin.key(),
+        fee_bps: 200,
+    });
+
     Ok(())
 }

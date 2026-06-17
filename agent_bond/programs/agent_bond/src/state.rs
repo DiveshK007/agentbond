@@ -1,14 +1,18 @@
 use anchor_lang::prelude::*;
 
-// PDA: [b"protocol"] — Space: 8+59=67
+// PDA: [b"protocol"] — Space: 8 + 63 = 71
+// Added: paused (1), appeal_period_seconds (8) = +9 from original 67→76
+// NOTE: space increased from 67 → 76; existing devnet accounts need realloc
 #[account]
 pub struct ProtocolConfig {
-    pub admin: Pubkey,           // 32
-    pub total_agents: u64,       // 8
-    pub total_jobs: u64,         // 8
-    pub total_volume: u64,       // 8
-    pub platform_fee_bps: u16,   // 2
-    pub bump: u8,                // 1
+    pub admin: Pubkey,              // 32
+    pub total_agents: u64,          // 8
+    pub total_jobs: u64,            // 8
+    pub total_volume: u64,          // 8
+    pub platform_fee_bps: u16,      // 2
+    pub paused: bool,               // 1   (v2) — circuit breaker
+    pub appeal_period_seconds: i64, // 8   (v2) — seconds after dispute before slash finalizes
+    pub bump: u8,                   // 1
 }
 
 // PDA: [b"agent", owner.key()] — Space: 8+247=255
@@ -41,7 +45,9 @@ pub struct ServiceListing {
     pub bump: u8,                // 1
 }
 
-// PDA: [b"job", job_index.to_le_bytes()] — Space: 8+202=210
+// PDA: [b"job", job_index.to_le_bytes()] — Space: 8+195=203
+// Fixed: actual size is 195, was over-allocated at 210
+// Added: disputed_at (8) for appeal window tracking → 195+8 = 203
 #[account]
 pub struct Job {
     pub poster: Pubkey,            // 32
@@ -51,11 +57,12 @@ pub struct Job {
     pub collateral: u64,           // 8
     pub deadline: i64,             // 8
     pub mode: u8,                  // 1  (0=Open, 1=Direct)
-    pub status: u8,                // 1  (0=Open,1=Assigned,2=Submitted,3=Completed,4=Disputed,5=Cancelled,6=TimedOut)
+    pub status: u8,                // 1  (0=Open,1=Assigned,2=Submitted,3=Completed,4=Disputed,5=Cancelled,6=TimedOut,7=DisputeResolved)
     pub result_hash: [u8; 32],     // 32
     pub created_at: i64,           // 8
     pub assigned_at: i64,          // 8
     pub resolved_at: i64,          // 8
+    pub disputed_at: i64,          // 8   (v2) — timestamp when dispute was filed
     pub job_index: u64,            // 8
     pub bump: u8,                  // 1
 }

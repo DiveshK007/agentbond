@@ -3,6 +3,7 @@ use anchor_lang::system_program;
 use crate::state::{AgentProfile, Job, ProtocolConfig};
 use crate::errors::AgentBondError;
 use crate::reputation::calculate_reputation;
+use crate::events;
 
 // ─── submit_result ────────────────────────────────────────────────────────────
 
@@ -30,6 +31,12 @@ pub fn submit_result(ctx: Context<SubmitResult>, result_hash: [u8; 32]) -> Resul
 
     ctx.accounts.job.result_hash = result_hash;
     ctx.accounts.job.status = 2;
+
+    emit!(events::ResultSubmitted {
+        job_index: ctx.accounts.job.job_index,
+        agent: ctx.accounts.agent_owner.key(),
+        result_hash,
+    });
 
     Ok(())
 }
@@ -99,42 +106,26 @@ pub fn approve_job(ctx: Context<ApproveJob>) -> Result<()> {
 
     let platform_fee = reward
         .checked_mul(fee_bps)
-        .unwrap()
+        .ok_or(AgentBondError::Overflow)?
         .checked_div(10_000)
-        .unwrap();
-    let agent_payment = reward.checked_sub(platform_fee).unwrap();
+        .ok_or(AgentBondError::Overflow)?;
+    let agent_payment = reward.checked_sub(platform_fee).ok_or(AgentBondError::Overflow)?;
 
     // Update agent
-    ctx.accounts.agent_profile.locked_stake = ctx
-        .accounts
-        .agent_profile
-        .locked_stake
-        .checked_sub(collateral)
-        .unwrap();
-    ctx.accounts.agent_profile.completed = ctx
-        .accounts
-        .agent_profile
-        .completed
-        .checked_add(1)
-        .unwrap();
+    ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+        .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+    ctx.accounts.agent_profile.completed = ctx.accounts.agent_profile.completed
+        .checked_add(1).ok_or(AgentBondError::Overflow)?;
     ctx.accounts.agent_profile.consecutive_fails = 0;
-    ctx.accounts.agent_profile.total_earned = ctx
-        .accounts
-        .agent_profile
-        .total_earned
-        .checked_add(agent_payment)
-        .unwrap();
+    ctx.accounts.agent_profile.total_earned = ctx.accounts.agent_profile.total_earned
+        .checked_add(agent_payment).ok_or(AgentBondError::Overflow)?;
 
     let new_rep = calculate_reputation(&ctx.accounts.agent_profile);
     ctx.accounts.agent_profile.reputation = new_rep;
 
     // Update protocol
-    ctx.accounts.protocol_config.total_volume = ctx
-        .accounts
-        .protocol_config
-        .total_volume
-        .checked_add(reward)
-        .unwrap();
+    ctx.accounts.protocol_config.total_volume = ctx.accounts.protocol_config.total_volume
+        .checked_add(reward).ok_or(AgentBondError::Overflow)?;
 
     // Update job
     ctx.accounts.job.status = 3;
@@ -168,19 +159,81 @@ pub fn approve_job(ctx: Context<ApproveJob>) -> Result<()> {
         )?;
     }
 
+    emit!(events::JobApproved {
+        job_index: ctx.accounts.job.job_index,
+        agent_payment,
+        platform_fee,
+        new_reputation: new_rep,
+    });
+
     Ok(())
 }
 
 // ─── dispute_job ──────────────────────────────────────────────────────────────
+// v2: Dispute now sets status = 4 (Disputed) and records disputed_at.
+//     Slashing does NOT happen immediately. The agent has `appeal_period_seconds`
+//     to respond. After the appeal period, anyone can call `resolve_dispute`
+//     to finalize the slash + refund.
 
 #[derive(Accounts)]
 pub struct DisputeJob<'info> {
+    #[account(
+        seeds = [b"protocol"],
+        bump = protocol_config.bump
+    )]
+    pub protocol_config: Account<'info, ProtocolConfig>,
+
     #[account(
         mut,
         seeds = [b"job", job.job_index.to_le_bytes().as_ref()],
         bump = job.bump,
         has_one = poster @ AgentBondError::NotJobPoster,
         constraint = job.status == 2 @ AgentBondError::JobNotSubmitted,
+    )]
+    pub job: Account<'info, Job>,
+
+    #[account(mut)]
+    pub poster: Signer<'info>,
+}
+
+pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
+    let clock = Clock::get()?;
+
+    // Mark as disputed — do NOT slash yet. Agent gets an appeal window.
+    ctx.accounts.job.status = 4;
+    ctx.accounts.job.disputed_at = clock.unix_timestamp;
+
+    let appeal_deadline = clock.unix_timestamp
+        .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
+        .ok_or(AgentBondError::Overflow)?;
+
+    emit!(events::JobDisputed {
+        job_index: ctx.accounts.job.job_index,
+        poster: ctx.accounts.poster.key(),
+        collateral_slashed: ctx.accounts.job.collateral,
+        appeal_deadline,
+    });
+
+    Ok(())
+}
+
+// ─── resolve_dispute ─────────────────────────────────────────────────────────
+// Callable by anyone after the appeal period expires. Finalizes the slash
+// and refund. This two-phase approach prevents the poster rug vector.
+
+#[derive(Accounts)]
+pub struct ResolveDispute<'info> {
+    #[account(
+        seeds = [b"protocol"],
+        bump = protocol_config.bump
+    )]
+    pub protocol_config: Account<'info, ProtocolConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"job", job.job_index.to_le_bytes().as_ref()],
+        bump = job.bump,
+        constraint = job.status == 4 @ AgentBondError::JobNotDisputed,
     )]
     pub job: Account<'info, Job>,
 
@@ -205,14 +258,30 @@ pub struct DisputeJob<'info> {
     )]
     pub stake_vault: SystemAccount<'info>,
 
+    /// CHECK: Job poster; receives refunds; verified by job.poster field
+    #[account(
+        mut,
+        constraint = poster.key() == job.poster @ AgentBondError::NotJobPoster
+    )]
+    pub poster: UncheckedAccount<'info>,
+
     #[account(mut)]
-    pub poster: Signer<'info>,
+    pub caller: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 }
 
-pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
+pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
     let clock = Clock::get()?;
+
+    // Enforce appeal period has expired
+    let appeal_deadline = ctx.accounts.job.disputed_at
+        .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
+        .ok_or(AgentBondError::Overflow)?;
+    require!(
+        clock.unix_timestamp > appeal_deadline,
+        AgentBondError::AppealPeriodActive
+    );
 
     let collateral = ctx.accounts.job.collateral;
     let reward = ctx.accounts.job.reward;
@@ -222,36 +291,16 @@ pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
     let stake_bump = ctx.bumps.stake_vault;
 
     // Slash agent
-    ctx.accounts.agent_profile.stake = ctx
-        .accounts
-        .agent_profile
-        .stake
-        .checked_sub(collateral)
-        .unwrap();
-    ctx.accounts.agent_profile.locked_stake = ctx
-        .accounts
-        .agent_profile
-        .locked_stake
-        .checked_sub(collateral)
-        .unwrap();
-    ctx.accounts.agent_profile.total_slashed = ctx
-        .accounts
-        .agent_profile
-        .total_slashed
-        .checked_add(collateral)
-        .unwrap();
-    ctx.accounts.agent_profile.failed = ctx
-        .accounts
-        .agent_profile
-        .failed
-        .checked_add(1)
-        .unwrap();
-    ctx.accounts.agent_profile.consecutive_fails = ctx
-        .accounts
-        .agent_profile
-        .consecutive_fails
-        .checked_add(1)
-        .unwrap();
+    ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
+        .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+    ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+        .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+    ctx.accounts.agent_profile.total_slashed = ctx.accounts.agent_profile.total_slashed
+        .checked_add(collateral).ok_or(AgentBondError::Overflow)?;
+    ctx.accounts.agent_profile.failed = ctx.accounts.agent_profile.failed
+        .checked_add(1).ok_or(AgentBondError::Overflow)?;
+    ctx.accounts.agent_profile.consecutive_fails = ctx.accounts.agent_profile.consecutive_fails
+        .checked_add(1).ok_or(AgentBondError::Overflow)?;
     if ctx.accounts.agent_profile.consecutive_fails >= 3 {
         ctx.accounts.agent_profile.status = 1;
     }
@@ -259,8 +308,8 @@ pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
     let new_rep = calculate_reputation(&ctx.accounts.agent_profile);
     ctx.accounts.agent_profile.reputation = new_rep;
 
-    // Resolve job
-    ctx.accounts.job.status = 4;
+    // Finalize job
+    ctx.accounts.job.status = 7; // DisputeResolved
     ctx.accounts.job.resolved_at = clock.unix_timestamp;
 
     // Return collateral from stake vault to poster
@@ -290,6 +339,12 @@ pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
         ),
         reward,
     )?;
+
+    emit!(events::DisputeResolved {
+        job_index: ctx.accounts.job.job_index,
+        resolved_by: ctx.accounts.caller.key(),
+        agent_slashed: true,
+    });
 
     Ok(())
 }
@@ -381,36 +436,16 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
 
     if status == 1 {
         // Agent assigned but never submitted — slash, refund poster
-        ctx.accounts.agent_profile.stake = ctx
-            .accounts
-            .agent_profile
-            .stake
-            .checked_sub(collateral)
-            .unwrap();
-        ctx.accounts.agent_profile.locked_stake = ctx
-            .accounts
-            .agent_profile
-            .locked_stake
-            .checked_sub(collateral)
-            .unwrap();
-        ctx.accounts.agent_profile.total_slashed = ctx
-            .accounts
-            .agent_profile
-            .total_slashed
-            .checked_add(collateral)
-            .unwrap();
-        ctx.accounts.agent_profile.failed = ctx
-            .accounts
-            .agent_profile
-            .failed
-            .checked_add(1)
-            .unwrap();
-        ctx.accounts.agent_profile.consecutive_fails = ctx
-            .accounts
-            .agent_profile
-            .consecutive_fails
-            .checked_add(1)
-            .unwrap();
+        ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.total_slashed = ctx.accounts.agent_profile.total_slashed
+            .checked_add(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.failed = ctx.accounts.agent_profile.failed
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.consecutive_fails = ctx.accounts.agent_profile.consecutive_fails
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
         if ctx.accounts.agent_profile.consecutive_fails >= 3 {
             ctx.accounts.agent_profile.status = 1;
         }
@@ -448,40 +483,22 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
     } else {
         // status == 2: submitted but poster never acted — auto-approve, pay agent
         let platform_fee = reward
-            .checked_mul(fee_bps)
-            .unwrap()
-            .checked_div(10_000)
-            .unwrap();
-        let agent_payment = reward.checked_sub(platform_fee).unwrap();
+            .checked_mul(fee_bps).ok_or(AgentBondError::Overflow)?
+            .checked_div(10_000).ok_or(AgentBondError::Overflow)?;
+        let agent_payment = reward.checked_sub(platform_fee).ok_or(AgentBondError::Overflow)?;
 
-        ctx.accounts.agent_profile.locked_stake = ctx
-            .accounts
-            .agent_profile
-            .locked_stake
-            .checked_sub(collateral)
-            .unwrap();
-        ctx.accounts.agent_profile.completed = ctx
-            .accounts
-            .agent_profile
-            .completed
-            .checked_add(1)
-            .unwrap();
+        ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.completed = ctx.accounts.agent_profile.completed
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
         ctx.accounts.agent_profile.consecutive_fails = 0;
-        ctx.accounts.agent_profile.total_earned = ctx
-            .accounts
-            .agent_profile
-            .total_earned
-            .checked_add(agent_payment)
-            .unwrap();
+        ctx.accounts.agent_profile.total_earned = ctx.accounts.agent_profile.total_earned
+            .checked_add(agent_payment).ok_or(AgentBondError::Overflow)?;
         let new_rep = calculate_reputation(&ctx.accounts.agent_profile);
         ctx.accounts.agent_profile.reputation = new_rep;
 
-        ctx.accounts.protocol_config.total_volume = ctx
-            .accounts
-            .protocol_config
-            .total_volume
-            .checked_add(reward)
-            .unwrap();
+        ctx.accounts.protocol_config.total_volume = ctx.accounts.protocol_config.total_volume
+            .checked_add(reward).ok_or(AgentBondError::Overflow)?;
 
         ctx.accounts.job.status = 3;
         ctx.accounts.job.resolved_at = clock.unix_timestamp;
@@ -512,6 +529,12 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
             )?;
         }
     }
+
+    emit!(events::TimeoutClaimed {
+        job_index: ctx.accounts.job.job_index,
+        previous_status: status,
+        auto_approved: status == 2,
+    });
 
     Ok(())
 }

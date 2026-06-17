@@ -2,19 +2,21 @@ use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 use crate::state::{AgentProfile, Bid, Job, ProtocolConfig};
 use crate::errors::AgentBondError;
+use crate::events;
+
+// Deadline bounds: min 60 seconds, max 30 days
+const MIN_DEADLINE_SECS: u64 = 60;
+const MAX_DEADLINE_SECS: u64 = 30 * 24 * 60 * 60; // 2_592_000
 
 // ─── create_job ───────────────────────────────────────────────────────────────
 
-// job_index is the first arg so #[instruction] can use it for PDA seeds.
-// The SDK reads protocol_config.total_jobs and passes it here; the constraint
-// enforces it matches the current counter, preventing gaps or pre-claiming.
 #[derive(Accounts)]
 #[instruction(job_index: u64)]
 pub struct CreateJob<'info> {
     #[account(
         init,
         payer = poster,
-        space = 210,
+        space = 211,  // 8 + 203 (includes disputed_at field)
         seeds = [b"job", job_index.to_le_bytes().as_ref()],
         bump,
         constraint = job_index == protocol_config.total_jobs @ AgentBondError::JobNotOpen,
@@ -31,7 +33,8 @@ pub struct CreateJob<'info> {
     #[account(
         mut,
         seeds = [b"protocol"],
-        bump = protocol_config.bump
+        bump = protocol_config.bump,
+        constraint = !protocol_config.paused @ AgentBondError::ProtocolPaused,
     )]
     pub protocol_config: Account<'info, ProtocolConfig>,
 
@@ -55,6 +58,10 @@ pub fn create_job(
 ) -> Result<()> {
     require!(reward > 0, AgentBondError::InsufficientReward);
     require!(mode <= 1, AgentBondError::InvalidJobMode);
+    require!(
+        deadline_seconds >= MIN_DEADLINE_SECS && deadline_seconds <= MAX_DEADLINE_SECS,
+        AgentBondError::DeadlineOutOfRange
+    );
 
     let clock = Clock::get()?;
     let poster_key = ctx.accounts.poster.key();
@@ -72,12 +79,16 @@ pub fn create_job(
         require!(profile.stake > 0, AgentBondError::InsufficientStake);
 
         let coll = reward.min(profile.stake / 10);
-        profile.locked_stake = profile.locked_stake.checked_add(coll).unwrap();
+        profile.locked_stake = profile.locked_stake
+            .checked_add(coll).ok_or(AgentBondError::Overflow)?;
 
         (owner_key, coll, 1u8, clock.unix_timestamp)
     } else {
         (Pubkey::default(), 0u64, 0u8, 0i64)
     };
+
+    let deadline = clock.unix_timestamp
+        .checked_add(deadline_seconds as i64).ok_or(AgentBondError::Overflow)?;
 
     let job = &mut ctx.accounts.job;
     job.poster = poster_key;
@@ -85,16 +96,14 @@ pub fn create_job(
     job.description_hash = description_hash;
     job.reward = reward;
     job.collateral = collateral;
-    job.deadline = clock
-        .unix_timestamp
-        .checked_add(deadline_seconds as i64)
-        .unwrap();
+    job.deadline = deadline;
     job.mode = mode;
     job.status = status;
     job.result_hash = [0u8; 32];
     job.created_at = clock.unix_timestamp;
     job.assigned_at = assigned_at;
     job.resolved_at = 0;
+    job.disputed_at = 0;
     job.job_index = job_index;
     job.bump = ctx.bumps.job;
 
@@ -107,15 +116,19 @@ pub fn create_job(
                 to: ctx.accounts.escrow_vault.to_account_info(),
             },
         ),
-        rent_min.checked_add(reward).unwrap(),
+        rent_min.checked_add(reward).ok_or(AgentBondError::Overflow)?,
     )?;
 
-    ctx.accounts.protocol_config.total_jobs = ctx
-        .accounts
-        .protocol_config
-        .total_jobs
-        .checked_add(1)
-        .unwrap();
+    ctx.accounts.protocol_config.total_jobs = ctx.accounts.protocol_config.total_jobs
+        .checked_add(1).ok_or(AgentBondError::Overflow)?;
+
+    emit!(events::JobCreated {
+        job_index,
+        poster: poster_key,
+        reward,
+        deadline,
+        mode,
+    });
 
     Ok(())
 }
@@ -170,6 +183,13 @@ pub fn bid_on_job(
     bid.created_at = clock.unix_timestamp;
     bid.bump = ctx.bumps.bid;
 
+    emit!(events::BidPlaced {
+        job_index: ctx.accounts.job.job_index,
+        agent: ctx.accounts.agent_owner.key(),
+        price,
+        estimated_seconds,
+    });
+
     Ok(())
 }
 
@@ -214,18 +234,20 @@ pub fn assign_agent(ctx: Context<AssignAgent>, agent_pubkey: Pubkey) -> Result<(
     let agent_stake = ctx.accounts.agent_profile.stake;
     let collateral = reward.min(agent_stake / 10);
 
-    ctx.accounts.agent_profile.locked_stake = ctx
-        .accounts
-        .agent_profile
-        .locked_stake
-        .checked_add(collateral)
-        .unwrap();
+    ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+        .checked_add(collateral).ok_or(AgentBondError::Overflow)?;
 
     let job = &mut ctx.accounts.job;
     job.agent = agent_pubkey;
     job.collateral = collateral;
     job.status = 1;
     job.assigned_at = clock.unix_timestamp;
+
+    emit!(events::AgentAssigned {
+        job_index: job.job_index,
+        agent: agent_pubkey,
+        collateral,
+    });
 
     Ok(())
 }
