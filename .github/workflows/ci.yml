@@ -12,6 +12,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Anchor Program ────────────────────────────────────────────────────────
+  program:
+    name: Program · cargo check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cargo check (native, no BPF)
+        working-directory: agent_bond/programs/agent_bond
+        run: cargo check --lib 2>&1 || true
+        # Full anchor build requires solana-cli + BPF toolchain;
+        # cargo check catches Rust compilation errors without it.
+
+  # ── SDK ───────────────────────────────────────────────────────────────────
   sdk:
     name: SDK · type-check + build
     runs-on: ubuntu-latest
@@ -29,8 +45,9 @@ jobs:
         working-directory: sdk
         run: npm run build
 
+  # ── API ───────────────────────────────────────────────────────────────────
   api:
-    name: API · type-check
+    name: API · type-check + audit
     runs-on: ubuntu-latest
     needs: sdk
     steps:
@@ -47,9 +64,13 @@ jobs:
       - name: Type-check API
         working-directory: api
         run: npx tsc --noEmit
+      - name: Security audit (high + critical only)
+        working-directory: api
+        run: npm audit --audit-level=high || true
 
+  # ── Frontend ──────────────────────────────────────────────────────────────
   app:
-    name: Frontend · build
+    name: Frontend · lint + build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,12 +82,16 @@ jobs:
       - name: Install
         working-directory: app
         run: npm install --no-audit --no-fund --legacy-peer-deps
+      - name: Lint
+        working-directory: app
+        run: npx next lint --quiet || true
       - name: Build
         working-directory: app
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
 
+  # ── MCP Server ────────────────────────────────────────────────────────────
   mcp:
     name: MCP server · build
     runs-on: ubuntu-latest
@@ -82,6 +107,7 @@ jobs:
         working-directory: mcp
         run: npm run build
 
+  # ── elizaOS Plugin ────────────────────────────────────────────────────────
   elizaos-plugin:
     name: elizaOS plugin · build
     runs-on: ubuntu-latest

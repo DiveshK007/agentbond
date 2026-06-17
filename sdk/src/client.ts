@@ -223,19 +223,35 @@ export class AgentBondClient {
   }
 
   async disputeJob(jobPubkey: PublicKey): Promise<string> {
-    const job = await this.fetchJob(jobPubkey);
-    const [agentProfile] = findAgentProfile(job.agent);
-    const [stakeVault] = findStakeVault(agentProfile);
-    const [escrowVault] = findEscrowVault(jobPubkey);
+    const [protocolConfigPda] = findProtocolConfig();
 
     return this.program.methods
       .disputeJob()
       .accounts({
+        protocolConfig: protocolConfigPda,
+        job: jobPubkey,
+        poster: this.walletPublicKey,
+      })
+      .rpc();
+  }
+
+  async resolveDispute(jobPubkey: PublicKey): Promise<string> {
+    const job = await this.fetchJob(jobPubkey);
+    const [agentProfile] = findAgentProfile(job.agent);
+    const [stakeVault] = findStakeVault(agentProfile);
+    const [escrowVault] = findEscrowVault(jobPubkey);
+    const [protocolConfigPda] = findProtocolConfig();
+
+    return this.program.methods
+      .resolveDispute()
+      .accounts({
+        protocolConfig: protocolConfigPda,
         job: jobPubkey,
         escrowVault,
         agentProfile,
         stakeVault,
-        poster: this.walletPublicKey,
+        poster: job.poster,
+        caller: this.walletPublicKey,
       })
       .rpc();
   }
@@ -261,6 +277,46 @@ export class AgentBondClient {
         poster: job.poster,
         caller: this.walletPublicKey,
       })
+      .rpc();
+  }
+
+  // ─── Admin ──────────────────────────────────────────────────────────────────
+
+  async updateFee(newFeeBps: number): Promise<string> {
+    const [protocolConfigPda] = findProtocolConfig();
+    return this.program.methods
+      .updateFee(newFeeBps)
+      .accounts({ protocolConfig: protocolConfigPda, admin: this.walletPublicKey })
+      .rpc();
+  }
+
+  async pauseProtocol(paused: boolean): Promise<string> {
+    const [protocolConfigPda] = findProtocolConfig();
+    return this.program.methods
+      .pauseProtocol(paused)
+      .accounts({ protocolConfig: protocolConfigPda, admin: this.walletPublicKey })
+      .rpc();
+  }
+
+  async withdrawTreasury(amount: bigint, destination: PublicKey): Promise<string> {
+    const [protocolConfigPda] = findProtocolConfig();
+    const [treasury] = findTreasury(protocolConfigPda);
+    return this.program.methods
+      .withdrawTreasury(new BN(amount.toString()))
+      .accounts({
+        protocolConfig: protocolConfigPda,
+        treasury,
+        destination,
+        admin: this.walletPublicKey,
+      })
+      .rpc();
+  }
+
+  async transferAdmin(newAdmin: PublicKey): Promise<string> {
+    const [protocolConfigPda] = findProtocolConfig();
+    return this.program.methods
+      .transferAdmin(newAdmin)
+      .accounts({ protocolConfig: protocolConfigPda, admin: this.walletPublicKey })
       .rpc();
   }
 
