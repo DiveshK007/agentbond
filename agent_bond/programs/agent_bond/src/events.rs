@@ -86,6 +86,13 @@ pub struct DisputeResolved {
 }
 
 #[event]
+pub struct DisputeCountered {
+    pub job_index: u64,
+    pub agent: Pubkey,
+    pub evidence_hash: [u8; 32],
+}
+
+#[event]
 pub struct TimeoutClaimed {
     pub job_index: u64,
     pub previous_status: u8,

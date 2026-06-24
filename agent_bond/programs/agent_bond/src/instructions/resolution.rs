@@ -217,9 +217,59 @@ pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
     Ok(())
 }
 
+// ─── counter_dispute ─────────────────────────────────────────────────────────
+// Agent submits counter-evidence during the appeal window.
+// Sets status = 5 (CounterDisputed), which blocks automatic slashing via
+// resolve_dispute. A countered dispute requires admin arbitration.
+
+#[derive(Accounts)]
+pub struct CounterDispute<'info> {
+    #[account(
+        seeds = [b"protocol"],
+        bump = protocol_config.bump
+    )]
+    pub protocol_config: Account<'info, ProtocolConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"job", job.job_index.to_le_bytes().as_ref()],
+        bump = job.bump,
+        constraint = job.status == 4 @ AgentBondError::JobNotDisputed,
+        constraint = job.agent == agent_owner.key() @ AgentBondError::NotAssignedAgent,
+    )]
+    pub job: Account<'info, Job>,
+
+    #[account(mut)]
+    pub agent_owner: Signer<'info>,
+}
+
+pub fn counter_dispute(ctx: Context<CounterDispute>, evidence_hash: [u8; 32]) -> Result<()> {
+    let clock = Clock::get()?;
+
+    // Must be within the appeal window
+    let appeal_deadline = ctx.accounts.job.disputed_at
+        .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
+        .ok_or(AgentBondError::Overflow)?;
+    require!(
+        clock.unix_timestamp <= appeal_deadline,
+        AgentBondError::DeadlinePassed
+    );
+
+    // Mark as counter-disputed — blocks automatic resolve_dispute slashing
+    ctx.accounts.job.status = 5; // CounterDisputed
+
+    emit!(events::DisputeCountered {
+        job_index: ctx.accounts.job.job_index,
+        agent: ctx.accounts.agent_owner.key(),
+        evidence_hash,
+    });
+
+    Ok(())
+}
+
 // ─── resolve_dispute ─────────────────────────────────────────────────────────
-// Callable by anyone after the appeal period expires. Finalizes the slash
-// and refund. This two-phase approach prevents the poster rug vector.
+// Callable by anyone after the appeal period expires on UN-COUNTERED disputes.
+// If the agent counter-disputed (status=5), only the admin can resolve.
 
 #[derive(Accounts)]
 pub struct ResolveDispute<'info> {
@@ -233,7 +283,7 @@ pub struct ResolveDispute<'info> {
         mut,
         seeds = [b"job", job.job_index.to_le_bytes().as_ref()],
         bump = job.bump,
-        constraint = job.status == 4 @ AgentBondError::JobNotDisputed,
+        constraint = job.status == 4 || job.status == 5 @ AgentBondError::JobNotDisputed,
     )]
     pub job: Account<'info, Job>,
 
@@ -273,15 +323,24 @@ pub struct ResolveDispute<'info> {
 
 pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
     let clock = Clock::get()?;
+    let job_status = ctx.accounts.job.status;
 
-    // Enforce appeal period has expired
-    let appeal_deadline = ctx.accounts.job.disputed_at
-        .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
-        .ok_or(AgentBondError::Overflow)?;
-    require!(
-        clock.unix_timestamp > appeal_deadline,
-        AgentBondError::AppealPeriodActive
-    );
+    // If agent counter-disputed (status=5), only admin can arbitrate
+    if job_status == 5 {
+        require!(
+            ctx.accounts.caller.key() == ctx.accounts.protocol_config.admin,
+            AgentBondError::NotAdmin
+        );
+    } else {
+        // status == 4: un-countered dispute — enforce appeal period expired
+        let appeal_deadline = ctx.accounts.job.disputed_at
+            .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
+            .ok_or(AgentBondError::Overflow)?;
+        require!(
+            clock.unix_timestamp > appeal_deadline,
+            AgentBondError::AppealPeriodActive
+        );
+    }
 
     let collateral = ctx.accounts.job.collateral;
     let reward = ctx.accounts.job.reward;

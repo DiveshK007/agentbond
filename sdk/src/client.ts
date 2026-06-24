@@ -256,6 +256,19 @@ export class AgentBondClient {
       .rpc();
   }
 
+  async counterDispute(jobPubkey: PublicKey, evidenceHash: Uint8Array): Promise<string> {
+    const [protocolConfigPda] = findProtocolConfig();
+
+    return this.program.methods
+      .counterDispute(Array.from(evidenceHash))
+      .accounts({
+        protocolConfig: protocolConfigPda,
+        job: jobPubkey,
+        agentOwner: this.walletPublicKey,
+      })
+      .rpc();
+  }
+
   async claimTimeout(jobPubkey: PublicKey): Promise<string> {
     const job = await this.fetchJob(jobPubkey);
     const [agentProfile] = findAgentProfile(job.agent);

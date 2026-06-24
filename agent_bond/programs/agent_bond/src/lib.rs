@@ -79,6 +79,10 @@ pub mod agent_bond {
         instructions::resolution::dispute_job(ctx)
     }
 
+    pub fn counter_dispute(ctx: Context<CounterDispute>, evidence_hash: [u8; 32]) -> Result<()> {
+        instructions::resolution::counter_dispute(ctx, evidence_hash)
+    }
+
     pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
         instructions::resolution::resolve_dispute(ctx)
     }
