@@ -43,6 +43,10 @@ pub mod agent_bond {
         instructions::agent::list_service(ctx, capability, price)
     }
 
+    pub fn deregister_agent(ctx: Context<DeregisterAgent>) -> Result<()> {
+        instructions::agent::deregister_agent(ctx)
+    }
+
     pub fn create_job(
         ctx: Context<CreateJob>,
         job_index: u64,

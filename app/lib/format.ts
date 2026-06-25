@@ -42,8 +42,9 @@ export const JOB_STATUS_LABEL: Record<number, string> = {
   2: "Submitted",
   3: "Completed",
   4: "Disputed",
-  5: "Cancelled",
+  5: "Counter-Disputed",
   6: "Timed Out",
+  7: "Dispute Resolved",
 };
 
 export const JOB_STATUS_CLASS: Record<number, string> = {
@@ -52,8 +53,9 @@ export const JOB_STATUS_CLASS: Record<number, string> = {
   2: "bg-accent/10 text-accent border-accent/20",
   3: "bg-emerald/10 text-emerald border-emerald/20",
   4: "bg-danger/10 text-danger border-danger/20",
-  5: "bg-elevated text-muted border-line",
+  5: "bg-purple/10 text-purple border-purple/20",
   6: "bg-elevated text-muted border-line",
+  7: "bg-elevated text-secondary border-line",
 };
 
 export function jobModeName(mode: number): string {

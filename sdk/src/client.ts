@@ -99,6 +99,18 @@ export class AgentBondClient {
       .rpc();
   }
 
+  async deregisterAgent(): Promise<string> {
+    const owner = this.walletPublicKey;
+    const [agentProfile] = findAgentProfile(owner);
+    const [stakeVault] = findStakeVault(agentProfile);
+    const [protocolConfig] = findProtocolConfig();
+
+    return this.program.methods
+      .deregisterAgent()
+      .accounts({ agentProfile, stakeVault, protocolConfig, owner })
+      .rpc();
+  }
+
   // ─── Instant Hire ────────────────────────────────────────────────────────────
 
   async instantHire(

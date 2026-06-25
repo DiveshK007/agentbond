@@ -17,6 +17,12 @@ pub struct AgentRegistered {
 }
 
 #[event]
+pub struct AgentDeregistered {
+    pub owner: Pubkey,
+    pub stake_returned: u64,
+}
+
+#[event]
 pub struct StakeUpdated {
     pub owner: Pubkey,
     pub deposited: u64,

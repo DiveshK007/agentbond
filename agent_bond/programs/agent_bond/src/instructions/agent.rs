@@ -244,3 +244,69 @@ pub fn list_service(
 
     Ok(())
 }
+
+// ─── deregister_agent ─────────────────────────────────────────────────────────
+// Agent withdraws all stake and closes their profile PDA.
+// Requires zero locked_stake (no active jobs).
+
+#[derive(Accounts)]
+pub struct DeregisterAgent<'info> {
+    #[account(
+        mut,
+        seeds = [b"agent", owner.key().as_ref()],
+        bump = agent_profile.bump,
+        constraint = agent_profile.locked_stake == 0 @ AgentBondError::StakeLocked,
+        close = owner
+    )]
+    pub agent_profile: Account<'info, AgentProfile>,
+
+    #[account(
+        mut,
+        seeds = [b"stake_vault", agent_profile.key().as_ref()],
+        bump
+    )]
+    pub stake_vault: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"protocol"],
+        bump = protocol_config.bump
+    )]
+    pub protocol_config: Account<'info, ProtocolConfig>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+pub fn deregister_agent(ctx: Context<DeregisterAgent>) -> Result<()> {
+    let remaining_stake = ctx.accounts.agent_profile.stake;
+    let agent_key = ctx.accounts.agent_profile.key();
+    let vault_bump = ctx.bumps.stake_vault;
+
+    // Return all remaining stake from vault to owner
+    if remaining_stake > 0 {
+        system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                system_program::Transfer {
+                    from: ctx.accounts.stake_vault.to_account_info(),
+                    to: ctx.accounts.owner.to_account_info(),
+                },
+                &[&[b"stake_vault", agent_key.as_ref(), &[vault_bump]]],
+            ),
+            remaining_stake,
+        )?;
+    }
+
+    ctx.accounts.protocol_config.total_agents = ctx.accounts.protocol_config.total_agents
+        .checked_sub(1).ok_or(AgentBondError::Overflow)?;
+
+    emit!(events::AgentDeregistered {
+        owner: ctx.accounts.owner.key(),
+        stake_returned: remaining_stake,
+    });
+
+    Ok(())
+}
