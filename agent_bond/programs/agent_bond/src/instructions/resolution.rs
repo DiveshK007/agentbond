@@ -171,9 +171,11 @@ pub fn approve_job(ctx: Context<ApproveJob>) -> Result<()> {
 
 // ─── dispute_job ──────────────────────────────────────────────────────────────
 // v2: Dispute now sets status = 4 (Disputed) and records disputed_at.
-//     Slashing does NOT happen immediately. The agent has `appeal_period_seconds`
-//     to respond. After the appeal period, anyone can call `resolve_dispute`
-//     to finalize the slash + refund.
+//     Poster must deposit a dispute bond (10% of reward, min 0.005 SOL).
+//     Bond is returned if dispute resolves in poster's favor.
+//     Bond goes to agent if agent's counter-dispute wins.
+
+const MIN_DISPUTE_BOND: u64 = 5_000_000; // 0.005 SOL
 
 #[derive(Accounts)]
 pub struct DisputeJob<'info> {
@@ -192,16 +194,46 @@ pub struct DisputeJob<'info> {
     )]
     pub job: Account<'info, Job>,
 
+    #[account(
+        mut,
+        seeds = [b"escrow", job.key().as_ref()],
+        bump
+    )]
+    pub escrow_vault: SystemAccount<'info>,
+
     #[account(mut)]
     pub poster: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn dispute_job(ctx: Context<DisputeJob>) -> Result<()> {
     let clock = Clock::get()?;
 
+    // Calculate dispute bond: 10% of reward, min 0.005 SOL
+    let bond = std::cmp::max(
+        ctx.accounts.job.reward
+            .checked_div(10)
+            .ok_or(AgentBondError::Overflow)?,
+        MIN_DISPUTE_BOND,
+    );
+
+    // Transfer bond from poster into escrow
+    system_program::transfer(
+        CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            system_program::Transfer {
+                from: ctx.accounts.poster.to_account_info(),
+                to: ctx.accounts.escrow_vault.to_account_info(),
+            },
+        ),
+        bond,
+    )?;
+
     // Mark as disputed — do NOT slash yet. Agent gets an appeal window.
     ctx.accounts.job.status = 4;
     ctx.accounts.job.disputed_at = clock.unix_timestamp;
+    ctx.accounts.job.dispute_bond = bond;
 
     let appeal_deadline = clock.unix_timestamp
         .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
@@ -308,6 +340,20 @@ pub struct ResolveDispute<'info> {
     )]
     pub stake_vault: SystemAccount<'info>,
 
+    #[account(
+        mut,
+        seeds = [b"treasury", protocol_config.key().as_ref()],
+        bump
+    )]
+    pub treasury: SystemAccount<'info>,
+
+    /// CHECK: Agent's wallet; receives payment if agent wins; verified by agent_profile
+    #[account(
+        mut,
+        constraint = agent_owner.key() == agent_profile.owner @ AgentBondError::NotAssignedAgent
+    )]
+    pub agent_owner: UncheckedAccount<'info>,
+
     /// CHECK: Job poster; receives refunds; verified by job.poster field
     #[account(
         mut,
@@ -321,7 +367,7 @@ pub struct ResolveDispute<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
+pub fn resolve_dispute(ctx: Context<ResolveDispute>, agent_wins: bool) -> Result<()> {
     let clock = Clock::get()?;
     let job_status = ctx.accounts.job.status;
 
@@ -333,6 +379,9 @@ pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
         );
     } else {
         // status == 4: un-countered dispute — enforce appeal period expired
+        // agent_wins MUST be false if they didn't counter-dispute
+        require!(!agent_wins, AgentBondError::NotAdmin); // Or just force false
+        
         let appeal_deadline = ctx.accounts.job.disputed_at
             .checked_add(ctx.accounts.protocol_config.appeal_period_seconds)
             .ok_or(AgentBondError::Overflow)?;
@@ -344,24 +393,109 @@ pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
 
     let collateral = ctx.accounts.job.collateral;
     let reward = ctx.accounts.job.reward;
+    let bond = ctx.accounts.job.dispute_bond;
     let job_key = ctx.accounts.job.key();
     let agent_profile_key = ctx.accounts.agent_profile.key();
     let escrow_bump = ctx.bumps.escrow_vault;
     let stake_bump = ctx.bumps.stake_vault;
 
-    // Slash agent
-    ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
-        .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
-    ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
-        .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
-    ctx.accounts.agent_profile.total_slashed = ctx.accounts.agent_profile.total_slashed
-        .checked_add(collateral).ok_or(AgentBondError::Overflow)?;
-    ctx.accounts.agent_profile.failed = ctx.accounts.agent_profile.failed
-        .checked_add(1).ok_or(AgentBondError::Overflow)?;
-    ctx.accounts.agent_profile.consecutive_fails = ctx.accounts.agent_profile.consecutive_fails
-        .checked_add(1).ok_or(AgentBondError::Overflow)?;
-    if ctx.accounts.agent_profile.consecutive_fails >= 3 {
-        ctx.accounts.agent_profile.status = 1;
+    if agent_wins {
+        // Agent wins: gets paid, bond goes to agent, collateral released
+        
+        let fee_bps = ctx.accounts.protocol_config.platform_fee_bps as u64;
+        let platform_fee = reward
+            .checked_mul(fee_bps)
+            .ok_or(AgentBondError::Overflow)?
+            .checked_div(10_000)
+            .ok_or(AgentBondError::Overflow)?;
+        let agent_payment = reward.checked_sub(platform_fee).ok_or(AgentBondError::Overflow)?
+            .checked_add(bond).ok_or(AgentBondError::Overflow)?; // Agent gets bond
+
+        // Update agent stats
+        ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.completed = ctx.accounts.agent_profile.completed
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.consecutive_fails = 0;
+        ctx.accounts.agent_profile.total_earned = ctx.accounts.agent_profile.total_earned
+            .checked_add(agent_payment).ok_or(AgentBondError::Overflow)?;
+            
+        // Protocol volume
+        ctx.accounts.protocol_config.total_volume = ctx.accounts.protocol_config.total_volume
+            .checked_add(reward).ok_or(AgentBondError::Overflow)?;
+
+        // Payout from escrow to agent
+        system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                system_program::Transfer {
+                    from: ctx.accounts.escrow_vault.to_account_info(),
+                    to: ctx.accounts.agent_owner.to_account_info(),
+                },
+                &[&[b"escrow", job_key.as_ref(), &[escrow_bump]]],
+            ),
+            agent_payment,
+        )?;
+
+        // Send fee to treasury
+        if platform_fee > 0 {
+            system_program::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    system_program::Transfer {
+                        from: ctx.accounts.escrow_vault.to_account_info(),
+                        to: ctx.accounts.treasury.to_account_info(),
+                    },
+                    &[&[b"escrow", job_key.as_ref(), &[escrow_bump]]],
+                ),
+                platform_fee,
+            )?;
+        }
+    } else {
+        // Poster wins (Slash agent): poster gets refund (reward + bond) and agent's collateral
+        
+        ctx.accounts.agent_profile.stake = ctx.accounts.agent_profile.stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.locked_stake = ctx.accounts.agent_profile.locked_stake
+            .checked_sub(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.total_slashed = ctx.accounts.agent_profile.total_slashed
+            .checked_add(collateral).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.failed = ctx.accounts.agent_profile.failed
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
+        ctx.accounts.agent_profile.consecutive_fails = ctx.accounts.agent_profile.consecutive_fails
+            .checked_add(1).ok_or(AgentBondError::Overflow)?;
+        if ctx.accounts.agent_profile.consecutive_fails >= 3 {
+            ctx.accounts.agent_profile.status = 1;
+        }
+
+        // Return collateral from stake vault to poster
+        if collateral > 0 {
+            system_program::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    system_program::Transfer {
+                        from: ctx.accounts.stake_vault.to_account_info(),
+                        to: ctx.accounts.poster.to_account_info(),
+                    },
+                    &[&[b"stake_vault", agent_profile_key.as_ref(), &[stake_bump]]],
+                ),
+                collateral,
+            )?;
+        }
+
+        // Refund reward + bond from escrow to poster
+        let refund_amount = reward.checked_add(bond).ok_or(AgentBondError::Overflow)?;
+        system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                system_program::Transfer {
+                    from: ctx.accounts.escrow_vault.to_account_info(),
+                    to: ctx.accounts.poster.to_account_info(),
+                },
+                &[&[b"escrow", job_key.as_ref(), &[escrow_bump]]],
+            ),
+            refund_amount,
+        )?;
     }
 
     let new_rep = calculate_reputation(&ctx.accounts.agent_profile);
@@ -371,38 +505,10 @@ pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
     ctx.accounts.job.status = 7; // DisputeResolved
     ctx.accounts.job.resolved_at = clock.unix_timestamp;
 
-    // Return collateral from stake vault to poster
-    if collateral > 0 {
-        system_program::transfer(
-            CpiContext::new_with_signer(
-                ctx.accounts.system_program.to_account_info(),
-                system_program::Transfer {
-                    from: ctx.accounts.stake_vault.to_account_info(),
-                    to: ctx.accounts.poster.to_account_info(),
-                },
-                &[&[b"stake_vault", agent_profile_key.as_ref(), &[stake_bump]]],
-            ),
-            collateral,
-        )?;
-    }
-
-    // Refund reward from escrow to poster
-    system_program::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: ctx.accounts.escrow_vault.to_account_info(),
-                to: ctx.accounts.poster.to_account_info(),
-            },
-            &[&[b"escrow", job_key.as_ref(), &[escrow_bump]]],
-        ),
-        reward,
-    )?;
-
     emit!(events::DisputeResolved {
         job_index: ctx.accounts.job.job_index,
         resolved_by: ctx.accounts.caller.key(),
-        agent_slashed: true,
+        agent_slashed: !agent_wins,
     });
 
     Ok(())

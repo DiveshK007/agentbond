@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "docs": "typedoc",
     "dev": "tsc --watch"
   },
   "dependencies": {
@@ -22,6 +23,8 @@
     "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^5.3.3"
   }
 }

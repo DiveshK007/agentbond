@@ -16,7 +16,7 @@ pub struct CreateJob<'info> {
     #[account(
         init,
         payer = poster,
-        space = 211,  // 8 + 203 (includes disputed_at field)
+        space = 219,  // 8 + 211 (includes disputed_at + dispute_bond fields)
         seeds = [b"job", job_index.to_le_bytes().as_ref()],
         bump,
         constraint = job_index == protocol_config.total_jobs @ AgentBondError::JobNotOpen,

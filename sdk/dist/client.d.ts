@@ -1,0 +1,44 @@
+import { AnchorProvider, Program, Wallet, Idl } from "@coral-xyz/anchor";
+import { PublicKey, Connection } from "@solana/web3.js";
+import { AgentProfile, Bid, Job, ProtocolConfig } from "./types";
+import { PROGRAM_ID } from "./utils";
+type AnyProgram = Program<Idl>;
+export declare class AgentBondClient {
+    readonly program: AnyProgram;
+    readonly provider: AnchorProvider;
+    constructor(connection: Connection, wallet: Wallet);
+    get walletPublicKey(): PublicKey;
+    private get accounts();
+    registerAgent(name: string, metadataUri: string, stakeLamports: bigint): Promise<string>;
+    updateStake(deposit?: bigint, withdraw?: bigint): Promise<string>;
+    listService(capability: string, priceLamports: bigint): Promise<string>;
+    deregisterAgent(): Promise<string>;
+    instantHire(agentPubkey: PublicKey, descriptionHash: Uint8Array, rewardLamports: bigint, deadlineSeconds: bigint): Promise<string>;
+    postJob(descriptionHash: Uint8Array, rewardLamports: bigint, deadlineSeconds: bigint): Promise<string>;
+    bidOnJob(jobPubkey: PublicKey, priceLamports: bigint, estimatedSeconds: number): Promise<string>;
+    assignAgent(jobPubkey: PublicKey, agentPubkey: PublicKey): Promise<string>;
+    submitResult(jobPubkey: PublicKey, resultHash: Uint8Array): Promise<string>;
+    approveJob(jobPubkey: PublicKey): Promise<string>;
+    disputeJob(jobPubkey: PublicKey): Promise<string>;
+    resolveDispute(jobPubkey: PublicKey, agentWins?: boolean): Promise<string>;
+    counterDispute(jobPubkey: PublicKey, evidenceHash: Uint8Array): Promise<string>;
+    claimTimeout(jobPubkey: PublicKey): Promise<string>;
+    updateFee(newFeeBps: number): Promise<string>;
+    pauseProtocol(paused: boolean): Promise<string>;
+    withdrawTreasury(amount: bigint, destination: PublicKey): Promise<string>;
+    transferAdmin(newAdmin: PublicKey): Promise<string>;
+    getProtocolStats(): Promise<ProtocolConfig>;
+    getAgent(owner: PublicKey): Promise<AgentProfile>;
+    getAllAgents(): Promise<AgentProfile[]>;
+    getJob(jobIndex: bigint): Promise<Job>;
+    getOpenJobs(): Promise<Job[]>;
+    getAllJobs(): Promise<Job[]>;
+    getBidsForJob(jobPubkey: PublicKey): Promise<Bid[]>;
+    private fetchJob;
+    private fetchAgentProfile;
+    private mapAgentProfile;
+    private mapJob;
+    private mapBid;
+}
+export { PROGRAM_ID };
+//# sourceMappingURL=client.d.ts.map

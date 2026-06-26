@@ -87,8 +87,8 @@ pub mod agent_bond {
         instructions::resolution::counter_dispute(ctx, evidence_hash)
     }
 
-    pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
-        instructions::resolution::resolve_dispute(ctx)
+    pub fn resolve_dispute(ctx: Context<ResolveDispute>, agent_wins: bool) -> Result<()> {
+        instructions::resolution::resolve_dispute(ctx, agent_wins)
     }
 
     pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {

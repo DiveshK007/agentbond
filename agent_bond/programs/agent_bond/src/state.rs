@@ -45,9 +45,8 @@ pub struct ServiceListing {
     pub bump: u8,                // 1
 }
 
-// PDA: [b"job", job_index.to_le_bytes()] — Space: 8+195=203
-// Fixed: actual size is 195, was over-allocated at 210
-// Added: disputed_at (8) for appeal window tracking → 195+8 = 203
+// PDA: [b"job", job_index.to_le_bytes()] — Space: 8+203=211
+// Added: dispute_bond (8) for anti-spam dispute protection → 195+8+8 = 211
 #[account]
 pub struct Job {
     pub poster: Pubkey,            // 32
@@ -63,6 +62,7 @@ pub struct Job {
     pub assigned_at: i64,          // 8
     pub resolved_at: i64,          // 8
     pub disputed_at: i64,          // 8   (v2) — timestamp when dispute was filed
+    pub dispute_bond: u64,          // 8   (v2) — poster's anti-spam bond deposited on dispute
     pub job_index: u64,            // 8
     pub bump: u8,                  // 1
 }

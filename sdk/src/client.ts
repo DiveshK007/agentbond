@@ -9,7 +9,10 @@ import {
 import {
   PublicKey,
   Connection,
-
+  Transaction,
+  VersionedTransaction,
+  Signer,
+  ConfirmOptions,
 } from "@solana/web3.js";
 import { IDL } from "./idl";
 import {
@@ -36,12 +39,35 @@ type AnyProgram = Program<Idl>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AccountNS = any;
 
+class RetryingProvider extends AnchorProvider {
+  maxRetries: number = 3;
+
+  async sendAndConfirm(
+    tx: Transaction | VersionedTransaction,
+    signers?: Signer[],
+    opts?: ConfirmOptions
+  ): Promise<string> {
+    let attempts = 0;
+    while (attempts < this.maxRetries) {
+      try {
+        return await super.sendAndConfirm(tx, signers, opts);
+      } catch (err) {
+        attempts++;
+        if (attempts >= this.maxRetries) throw err;
+        console.warn(`[AgentBondClient] Transaction failed, retrying (${attempts}/${this.maxRetries})...`, err);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, attempts)));
+      }
+    }
+    throw new Error("Unreachable");
+  }
+}
+
 export class AgentBondClient {
   readonly program: AnyProgram;
   readonly provider: AnchorProvider;
 
   constructor(connection: Connection, wallet: Wallet) {
-    this.provider = new AnchorProvider(connection, wallet, {
+    this.provider = new RetryingProvider(connection, wallet, {
       commitment: "confirmed",
     });
     setProvider(this.provider);
@@ -236,32 +262,37 @@ export class AgentBondClient {
 
   async disputeJob(jobPubkey: PublicKey): Promise<string> {
     const [protocolConfigPda] = findProtocolConfig();
+    const [escrowVault] = findEscrowVault(jobPubkey);
 
     return this.program.methods
       .disputeJob()
       .accounts({
         protocolConfig: protocolConfigPda,
         job: jobPubkey,
+        escrowVault,
         poster: this.walletPublicKey,
       })
       .rpc();
   }
 
-  async resolveDispute(jobPubkey: PublicKey): Promise<string> {
+  async resolveDispute(jobPubkey: PublicKey, agentWins: boolean = false): Promise<string> {
     const job = await this.fetchJob(jobPubkey);
     const [agentProfile] = findAgentProfile(job.agent);
     const [stakeVault] = findStakeVault(agentProfile);
     const [escrowVault] = findEscrowVault(jobPubkey);
     const [protocolConfigPda] = findProtocolConfig();
+    const [treasury] = findTreasury(protocolConfigPda);
 
     return this.program.methods
-      .resolveDispute()
+      .resolveDispute(agentWins)
       .accounts({
         protocolConfig: protocolConfigPda,
         job: jobPubkey,
         escrowVault,
         agentProfile,
         stakeVault,
+        treasury,
+        agentOwner: job.agent,
         poster: job.poster,
         caller: this.walletPublicKey,
       })
