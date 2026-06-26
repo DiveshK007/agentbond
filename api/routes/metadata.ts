@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { createHash } from "crypto";
 import db from "../db";
+import { validate, JobDescriptionSchema, JobResultSchema } from "../validation";
 
 const router = Router();
 
@@ -10,12 +11,8 @@ const router = Router();
  * concurrent-read safe, survives server restarts.
  */
 
-router.post("/job", (req: Request, res: Response) => {
-  const { description } = req.body as { description?: string };
-  if (!description) {
-    res.status(400).json({ error: "description required" });
-    return;
-  }
+router.post("/job", validate(JobDescriptionSchema), (req: Request, res: Response) => {
+  const { description } = req.body as { description: string };
   const hash = createHash("sha256").update(description).digest("hex");
   db.prepare(
     "INSERT OR IGNORE INTO job_descriptions (hash, description) VALUES (?, ?)"
@@ -35,15 +32,11 @@ router.get("/job/:hash", (req: Request, res: Response) => {
   res.json({ hash: req.params["hash"], description: row.description });
 });
 
-router.post("/result", (req: Request, res: Response) => {
+router.post("/result", validate(JobResultSchema), (req: Request, res: Response) => {
   const { result, jobIndex } = req.body as {
-    result?: string;
+    result: string;
     jobIndex?: number;
   };
-  if (!result) {
-    res.status(400).json({ error: "result required" });
-    return;
-  }
   const hash = createHash("sha256").update(result).digest("hex");
   db.prepare(
     "INSERT OR IGNORE INTO job_results (hash, result, job_index) VALUES (?, ?, ?)"

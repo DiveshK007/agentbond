@@ -15,7 +15,8 @@
     "express-rate-limit": "^8.5.2",
     "helius-sdk": "^2.2.2",
     "helmet": "^8.2.0",
-    "x402-express": "^1.2.0"
+    "x402-express": "^1.2.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

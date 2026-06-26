@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { validate, HeliusEventSchema, WebhookRegisterSchema } from "../validation";
 
 const router = Router();
 
@@ -37,13 +38,8 @@ interface ParsedEvent {
  * Register this URL as your webhook callback in the Helius dashboard
  * or via the /register endpoint below.
  */
-router.post("/helius", (req: Request, res: Response) => {
+router.post("/helius", validate(HeliusEventSchema), (req: Request, res: Response) => {
   const events = req.body as HeliusWebhookPayload[];
-
-  if (!Array.isArray(events)) {
-    res.status(400).json({ error: "Expected array of events" });
-    return;
-  }
 
   for (const event of events) {
     const parsed: ParsedEvent = {
@@ -148,15 +144,12 @@ router.get("/transactions/:address", async (req: Request, res: Response) => {
  * Programmatically create a Helius webhook to monitor the AgentBond program.
  * Requires HELIUS_API_KEY and a publicly accessible callback URL.
  */
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", validate(WebhookRegisterSchema), async (req: Request, res: Response) => {
   if (!HELIUS_API_KEY) {
     return res.status(503).json({ error: "HELIUS_API_KEY not configured" });
   }
 
-  const { callbackUrl } = req.body as { callbackUrl?: string };
-  if (!callbackUrl) {
-    return res.status(400).json({ error: "callbackUrl required" });
-  }
+  const { callbackUrl } = req.body as { callbackUrl: string };
 
   try {
     const response = await fetch(

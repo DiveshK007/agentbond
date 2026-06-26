@@ -22,6 +22,7 @@ export type {
   Bid,
 } from "./types";
 export { AgentStatus, JobStatus, JobMode } from "./types";
+export { ErrorCode, AgentBondError, parseTransactionError } from "./errors";
 export { encryptForAgent, decryptForAgent, generateEphemeralKeypair } from "./confidential";
 export type { EncryptedPayload } from "./confidential";
 export {
